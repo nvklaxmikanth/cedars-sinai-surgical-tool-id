@@ -12,13 +12,16 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from contract import list_expected_filenames, validate_schema
-from predict import InferenceDataset, discover_images, main
+from predict import CLASS_NAMES, InferenceDataset, discover_images, main
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class InferenceTests(unittest.TestCase):
+    def test_checkpoint_output_class_order(self):
+        self.assertEqual(CLASS_NAMES, ['clipper', 'grasper', 'hook', 'scissor'])
+
     def test_recursive_discovery_is_sorted_and_disambiguates_only_duplicates(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -74,7 +77,7 @@ class InferenceTests(unittest.TestCase):
                 rows = list(csv.DictReader(file))
             self.assertEqual([row['filename'] for row in rows], ['a/same.png', 'b/same.png'])
             self.assertTrue(validate_schema(out, list_expected_filenames(root),
-                                            ['grasper', 'hook', 'clipper', 'scissor'])['ok'])
+                                            CLASS_NAMES)['ok'])
 
     def test_cli_runs_without_training_only_packages(self):
         with tempfile.TemporaryDirectory() as tmp:

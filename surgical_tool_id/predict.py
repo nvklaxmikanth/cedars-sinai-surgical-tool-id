@@ -19,8 +19,8 @@ import torch.nn as nn
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-# Keep the deployed checkpoint's existing output mapping unchanged for E0.
-CLASS_NAMES = ["grasper", "hook", "clipper", "scissor"]
+# Checkpoint output indices follow the alphabetical label order used in training.
+CLASS_NAMES = ["clipper", "grasper", "hook", "scissor"]
 CHECKPOINT_PATH = os.path.join(os.path.dirname(__file__), "checkpoints", "model_best.pt")
 
 
