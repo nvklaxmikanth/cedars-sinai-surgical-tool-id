@@ -1,0 +1,5 @@
+{
+  "model": "efficientnet_b0",
+  "val_acc": 0.10311111111111111,
+  "epochs": 15
+}

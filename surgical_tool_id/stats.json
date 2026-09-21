@@ -1,0 +1,14 @@
+{
+  "mean": [
+    0.4153883187443755,
+    0.28836456558703716,
+    0.28414394704278473
+  ],
+  "std": [
+    0.2543320367164422,
+    0.2447922960347089,
+    0.23714184554747988
+  ],
+  "n_images": 1402,
+  "note": "computed once over the full local dataset for consistency across scripts"
+}

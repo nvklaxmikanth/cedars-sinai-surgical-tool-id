@@ -1,0 +1,10 @@
+# Default training config. NOTE: run_experiment.py reads this at import time,
+# but most of these values get overridden further down in that file once the
+# actual hyperparameter search settled - see the top of main() there.
+learning_rate: 0.001
+batch_size: 64
+num_epochs: 30
+weight_decay: 0.0001
+optimizer: adam
+image_size: 224
+data_root: data/cholec-tinytools

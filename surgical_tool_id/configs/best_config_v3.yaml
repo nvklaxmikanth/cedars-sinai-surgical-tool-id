@@ -1,0 +1,12 @@
+# Result of the sweep from last quarter - these were the best hparams we
+# found. Should probably be wired back into run_experiment.py at some point.
+learning_rate: 0.0003
+batch_size: 48
+num_epochs: 25
+weight_decay: 0.00001
+optimizer: adamw
+image_size: 128
+data_root: data/cholec-tinytools
+notes: >
+  clipper/scissor confusion dropped noticeably with a lower LR and smaller
+  batch size. Revisit once we have more scissor examples.
