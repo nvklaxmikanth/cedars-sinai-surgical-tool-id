@@ -10,6 +10,7 @@ Deliberately dependency-light (stdlib + csv only) so it never becomes a
 reason a submission fails to even be checked.
 """
 import csv
+from collections import Counter
 import subprocess
 import sys
 import time
@@ -84,11 +85,20 @@ def validate_schema(csv_path: Path, expected_filenames, class_names):
         if len(row) != 2:
             return {"ok": False, "reason": f"BAD_SCHEMA: malformed row {row}", "n_rows": len(rows)}
         fname, cls = row
+        if fname in predicted:
+            return {"ok": False, "reason": f"DUPLICATE_FILENAME: {fname}", "n_rows": len(rows)}
         predicted[fname] = cls
+
+    if len(rows) != len(expected_filenames):
+        return {"ok": False, "reason": f"BAD_ROW_COUNT: {len(rows)} rows, expected {len(expected_filenames)}", "n_rows": len(rows)}
 
     unknown = set(predicted.values()) - set(class_names)
     if unknown:
         return {"ok": False, "reason": f"UNKNOWN_LABELS: {sorted(unknown)}", "n_rows": len(rows)}
+
+    extra = set(predicted) - set(expected_filenames)
+    if extra:
+        return {"ok": False, "reason": f"UNEXPECTED_FILENAMES: {sorted(extra)[:5]}", "n_rows": len(rows)}
 
     missing = set(expected_filenames) - set(predicted)
     if missing:
@@ -103,14 +113,12 @@ def validate_schema(csv_path: Path, expected_filenames, class_names):
 
 def list_expected_filenames(data_dir: Path):
     data_dir = Path(data_dir)
-    subdirs = [p for p in data_dir.iterdir() if p.is_dir()]
-    names = []
-    if subdirs:
-        for d in subdirs:
-            names.extend(f.name for f in d.glob("*.png"))
-    else:
-        names.extend(f.name for f in data_dir.glob("*.png"))
-    return names
+    if not data_dir.is_dir():
+        raise ValueError(f"data directory does not exist or is not a directory: {data_dir}")
+    paths = sorted((p for p in data_dir.rglob("*") if p.is_file() and p.suffix.lower() == ".png"),
+                   key=lambda p: p.relative_to(data_dir).as_posix())
+    counts = Counter(p.name for p in paths)
+    return [p.relative_to(data_dir).as_posix() if counts[p.name] > 1 else p.name for p in paths]
 
 
 def discover_class_names(data_dir: Path):
