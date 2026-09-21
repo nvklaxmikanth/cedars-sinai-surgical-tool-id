@@ -80,3 +80,35 @@ E1 confusion matrix, **rows = folder label; columns = predicted label**, both in
 | scissor | 5 | 2 | 4 | 16 |
 
 The same diagnostic on the 1,125 supplied training-folder images yielded E1 accuracy 0.832000 and macro-F1 0.724822; 1,091 decoded labels changed from E0. These training-folder metrics are especially susceptible to training overlap and should not be read as generalization estimates.
+
+# E2 — leakage-safe video-grouped evaluation folds
+
+E2 creates a version 1 five-fold manifest from all 1,402 PNG files in the original `train/` and `validation/` trees. Each sample stores its complete relative path, folder label, and the first number before `_` as video ID. No model training, inference code, checkpoint, or original dataset file changed.
+
+## Selection method
+
+`splits/video_folds.py` enumerates each unlabeled partition of the 10 observed video IDs into five nonempty folds once, rejects partitions missing any of the four classes on either side of any fold, then minimizes the sum of squared relative deviations of each validation-fold class count from one fifth of that class's total count. Ties resolve deterministically from sorted video IDs and canonical fold IDs. There were **6,175 feasible partitions**. The selected score was **5.461419**. Standard `sklearn.model_selection.GroupKFold(n_splits=5)` scored **8.411986** under the identical class-balance function. Both methods happened to put all four classes in every validation fold for this dataset.
+
+| Selected fold | Validation video IDs | Images | Clipper | Grasper | Hook | Scissor |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 7013, 8610 | 260 | 54 | 100 | 90 | 16 |
+| 1 | 7201, 7301, 8611 | 461 | 32 | 149 | 212 | 68 |
+| 2 | 7414, 7697 | 174 | 67 | 62 | 31 | 14 |
+| 3 | 7654, 7695 | 266 | 49 | 98 | 81 | 38 |
+| 4 | 9152 | 241 | 60 | 83 | 91 | 7 |
+
+For comparison, standard GroupKFold validation groups and class counts were: `7201` (440; 12/149/212/67), `9152` (241; 60/83/91/7), `7013` (238; 42/100/90/6), `7414+7654` (240; 108/15/69/48), and `7301+7695+7697+8610+8611` (243; 40/145/43/15). Counts are clipper/grasper/hook/scissor. The selected class balance is better under the stated score; its validation-fold sizes range from **174 to 461**, compared with **238 to 440** for GroupKFold. Video 7201 alone has 440 images, limiting achievable size balance.
+
+## Commands, integrity, and hashes
+
+Commands ran from `surgical_tool_id/`:
+
+| Command | Measured result |
+| --- | --- |
+| `PYTHONDONTWRITEBYTECODE=1 python splits/video_folds.py` | Wrote `splits/video_grouped_fivefold_v1.json` with 1,402 samples, 6,175 feasible partitions, balance score 5.461419. |
+| Python read-only comparison using `GroupKFold(n_splits=5)`, `fold_summary`, and `balance_score` | GroupKFold balance score 8.411986; fold video IDs, sizes, and class counts are reported above. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 9 tests passed in 0.795 s. E2 tests checked every path and folder label, zero train/validation video overlap in each fold, each sample in exactly one validation fold, all four classes on both sides, and byte-for-byte manifest regeneration. |
+| `git diff --check` | No whitespace errors. |
+| `shasum -a 256 splits/video_folds.py splits/video_grouped_fivefold_v1.json tests/test_e2_splits.py` | SHA-256: builder `82766c83dd41d532baca2178f10ade0724b8f74b12ccca55c24c2b88d6facfa3`; manifest `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; tests `2f55d00030f883c1d4e63aa5f2b0a3db1e93453912f1596b2a4006e1367a4caf`. |
+
+The grouping assumes the first filename number identifies a video, as described in the repository's older split code; no external video metadata was supplied. The class-presence constraint is feasible for this corpus, so the builder requires it and raises an error on a corpus where it cannot be met. The manifest is an evaluation artifact; existing training scripts are not yet wired to consume it. No cross-validation model scores were measured.
