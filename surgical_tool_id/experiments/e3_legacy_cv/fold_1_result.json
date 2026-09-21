@@ -1,0 +1,171 @@
+{
+  "fold": 1,
+  "seed": 42,
+  "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "checkpoint_sha256": "12abcc4e8a38c3cff11a59a4ffdbefb7b01ebb4f1ba4f2c95ded4fb257025e7d",
+  "selected_epoch": 6,
+  "epochs_ran": 16,
+  "early_stopped": true,
+  "validation_video_ids": [
+    "7201",
+    "7301",
+    "8611"
+  ],
+  "metrics": {
+    "n": 461,
+    "accuracy": 0.7418655097613883,
+    "macro_f1": 0.5884090338239865,
+    "per_class": {
+      "clipper": {
+        "support": 32,
+        "precision": 0.30985915492957744,
+        "recall": 0.6875,
+        "f1": 0.42718446601941745
+      },
+      "grasper": {
+        "support": 149,
+        "precision": 0.7727272727272727,
+        "recall": 0.912751677852349,
+        "f1": 0.8369230769230769
+      },
+      "hook": {
+        "support": 212,
+        "precision": 0.8656716417910447,
+        "recall": 0.8207547169811321,
+        "f1": 0.8426150121065376
+      },
+      "scissor": {
+        "support": 68,
+        "precision": 0.7692307692307693,
+        "recall": 0.14705882352941177,
+        "f1": 0.2469135802469136
+      }
+    },
+    "confusion_matrix": [
+      [
+        22,
+        3,
+        7,
+        0
+      ],
+      [
+        8,
+        136,
+        4,
+        1
+      ],
+      [
+        23,
+        13,
+        174,
+        2
+      ],
+      [
+        18,
+        24,
+        16,
+        10
+      ]
+    ]
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 0.12424110919034508,
+      "val_macro_f1": 0.49162186379928313,
+      "val_accuracy": 0.7266811279826464
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.11373596841053357,
+      "val_macro_f1": 0.5368645756305782,
+      "val_accuracy": 0.7527114967462039
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.11125739130985764,
+      "val_macro_f1": 0.44325823020407223,
+      "val_accuracy": 0.5553145336225597
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.10179194997999273,
+      "val_macro_f1": 0.5508970817333033,
+      "val_accuracy": 0.6854663774403471
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.09782630097091878,
+      "val_macro_f1": 0.5675441662013543,
+      "val_accuracy": 0.7440347071583514
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.08670826029465695,
+      "val_macro_f1": 0.507376447839961,
+      "val_accuracy": 0.6355748373101953
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.09407372303296495,
+      "val_macro_f1": 0.5884090338239865,
+      "val_accuracy": 0.7418655097613883
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.08479794429004911,
+      "val_macro_f1": 0.5516782532088782,
+      "val_accuracy": 0.648590021691974
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.0681376965506391,
+      "val_macro_f1": 0.5584407958453761,
+      "val_accuracy": 0.7049891540130152
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.06666536230818802,
+      "val_macro_f1": 0.5681699774797485,
+      "val_accuracy": 0.7288503253796096
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.07682848095016173,
+      "val_macro_f1": 0.49480123895017514,
+      "val_accuracy": 0.6030368763557483
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.07647915156074064,
+      "val_macro_f1": 0.5466672470850483,
+      "val_accuracy": 0.6811279826464208
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.0658343807345079,
+      "val_macro_f1": 0.5701296582218275,
+      "val_accuracy": 0.7093275488069414
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.06694536539577935,
+      "val_macro_f1": 0.5448293367580862,
+      "val_accuracy": 0.6702819956616052
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.06794979227596021,
+      "val_macro_f1": 0.543446897199903,
+      "val_accuracy": 0.7223427331887202
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.0678297511985079,
+      "val_macro_f1": 0.5831160032379543,
+      "val_accuracy": 0.7331887201735358
+    }
+  ],
+  "runtime_seconds": 203.74093583298963,
+  "peak_rss_mib": 572.109375
+}

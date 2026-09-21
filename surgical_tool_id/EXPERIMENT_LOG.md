@@ -112,3 +112,67 @@ Commands ran from `surgical_tool_id/`:
 | `shasum -a 256 splits/video_folds.py splits/video_grouped_fivefold_v1.json tests/test_e2_splits.py` | SHA-256: builder `82766c83dd41d532baca2178f10ade0724b8f74b12ccca55c24c2b88d6facfa3`; manifest `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; tests `2f55d00030f883c1d4e63aa5f2b0a3db1e93453912f1596b2a4006e1367a4caf`. |
 
 The grouping assumes the first filename number identifies a video, as described in the repository's older split code; no external video metadata was supplied. The class-presence constraint is feasible for this corpus, so the builder requires it and raises an error on a corpus where it cannot be met. The manifest is an evaluation artifact; existing training scripts are not yet wired to consume it. No cross-validation model scores were measured.
+
+# E3 — fresh legacy CNN on E2 video folds
+
+E3 trained five independent CPU SmallCNN models using seed 42, one per E2 fold. Each run initialized a new model and Adam optimizer and read only that fold's `train_paths` for gradient updates. The architecture and image pipeline match `legacy/cnn_baseline_v2.py`: grayscale PIL image, resize to 128×128, float32 / 255, repeat to three channels, four convolution/BatchNorm/ReLU/MaxPool blocks, dropout 0.5, and a four-output linear head. Training used batch size 2, shuffle, Adam at 0.001, softmax, one-hot targets, MSE loss, at most 30 epochs, and the original three-epoch training-loss patience with minimum improvement 1e-4. No pretrained weights, supplied checkpoint, or augmentation was used. Validation data was evaluated only in `eval()` with no gradient, and the checkpoint with the highest validation macro-F1 was selected (earliest epoch on a tie). Class order was `clipper, grasper, hook, scissor` from folder labels in the E2 manifest.
+
+## Commands and verification
+
+Commands ran from `surgical_tool_id/`:
+
+| Command | Result |
+| --- | --- |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e3_legacy_cv/train_cv.py --fold 0` | Fold 0 trained independently. A repeat of this exact command produced identical checkpoint SHA-256 `a45150add507def9b6934fdb3bfb9bc597cce53201612da8b473489115adb1fc` and fold OOF CSV SHA-256 `3098946cc1b5a6275ed318ee3f40108854065ca5bb9d9a51564deff45e84a745`. First runtime 64.838 s, 391.0 MiB peak RSS; repeat runtime 60.741 s, 558.2 MiB peak RSS. The repeat result is retained in `results.json`. |
+| `for fold in 1 2 3 4; do PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e3_legacy_cv/train_cv.py --fold "$fold" || exit; done` | Four separate training processes completed. Per-fold times and peak memory appear below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e3_legacy_cv/train_cv.py --aggregate` | Wrote `oof_predictions.csv` with 1,402 unique complete relative paths and `results.json` with pooled metrics. Recomputed after fold 0 repeat. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 15 tests passed in 9.063 s. E3 tests cover seed repeatability at initialization and one optimizer update, architecture state shapes, a known metric fixture, exact OOF coverage, metrics recomputation, selected-epoch maximal F1, checkpoint hashes, and predictions reproduced from all five reloaded checkpoints. |
+| `git diff --check` | No whitespace errors. |
+
+The retained five training runs total **802.896 s** measured inside `train_fold`; fold 0's additional repeat took **64.838 s**. Peak process RSS across the retained runs was **594.484 MiB**. RSS includes the interpreter and loaded libraries and was measured with `resource.getrusage` in a separate process per fold. Timing excludes process startup and aggregation. Repeated fold 0 had identical model and predictions but different runtime and peak RSS, so resource figures are observations rather than deterministic properties.
+
+| Fold | Validation n | Selected epoch (zero-based) | Epochs run | Accuracy | Macro-F1 | Runtime s | Peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 260 | 1 | 5 | 0.680769 | 0.399104 | 60.741 | 558.188 |
+| 1 | 461 | 6 | 16 | 0.741866 | 0.588409 | 203.741 | 572.109 |
+| 2 | 174 | 3 | 7 | 0.787356 | 0.802395 | 86.461 | 505.328 |
+| 3 | 266 | 17 | 18 | 0.781955 | 0.616423 | 231.840 | 594.484 |
+| 4 | 241 | 16 | 18 | 0.709544 | 0.602551 | 220.113 | 433.750 |
+
+## Precision, recall, F1, and confusion matrices
+
+All metrics use folder labels as the explicit single-label diagnostic assumption from E2. Class order for the matrices is **clipper, grasper, hook, scissor**; rows are actual folder labels and columns are predictions. Entries in the per-class tables are precision / recall / F1.
+
+| Fold | Clipper P/R/F1 | Grasper P/R/F1 | Hook P/R/F1 | Scissor P/R/F1 |
+| --- | --- | --- | --- | --- |
+| 0 | 0.000/0.000/0.000 | 0.584/0.900/0.709 | 0.821/0.967/0.888 | 0.000/0.000/0.000 |
+| 1 | 0.310/0.688/0.427 | 0.773/0.913/0.837 | 0.866/0.821/0.843 | 0.769/0.147/0.247 |
+| 2 | 0.824/0.627/0.712 | 0.714/0.887/0.791 | 0.906/0.935/0.921 | 0.786/0.786/0.786 |
+| 3 | 0.580/0.816/0.678 | 0.826/0.969/0.892 | 0.890/0.901/0.896 | 0.000/0.000/0.000 |
+| 4 | 0.724/0.700/0.712 | 0.789/0.855/0.821 | 0.902/0.604/0.724 | 0.094/0.429/0.154 |
+
+| Fold | Confusion matrix (four rows) |
+| --- | --- |
+| 0 | `[[0,47,7,0],[0,90,10,0],[0,3,87,0],[0,14,2,0]]` |
+| 1 | `[[22,3,7,0],[8,136,4,1],[23,13,174,2],[18,24,16,10]]` |
+| 2 | `[[42,21,2,2],[6,55,0,1],[1,1,29,0],[2,0,1,11]]` |
+| 3 | `[[40,5,4,0],[3,95,0,0],[2,6,73,0],[24,9,5,0]]` |
+| 4 | `[[42,10,6,2],[3,71,0,9],[11,7,55,18],[2,2,0,3]]` |
+
+**Pooled OOF:** 1,402 samples, accuracy **0.738231**, macro-F1 **0.616462**. This is computed from the 1,402 OOF predictions, not the average of fold F1 scores.
+
+| Class | Support | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| clipper | 262 | 0.586345 | 0.557252 | 0.571429 |
+| grasper | 492 | 0.730392 | 0.908537 | 0.809783 |
+| hook | 505 | 0.867220 | 0.827723 | 0.847011 |
+| scissor | 143 | 0.406780 | 0.167832 | 0.237624 |
+
+Pooled confusion matrix: `[[146,86,26,4],[20,447,14,11],[37,30,418,20],[46,49,24,24]]`.
+
+## Artifacts and limits
+
+- `experiments/e3_legacy_cv/oof_predictions.csv` contains exactly one row per E2 sample, keyed by complete relative path, including its video ID, folder label, predicted index and label, and fold. Its SHA-256 is `445eb95d4f92a1e965d867518133567795e667159dfe108b4751409df6175e86`.
+- `experiments/e3_legacy_cv/results.json` contains exact per-fold and pooled metrics, confusion matrices, selected epoch, epoch history, runtime, peak RSS, and checkpoint hashes. Its SHA-256 is `23dddbb5694c041487f470e943f0679cd0fff3fad845a8a2ba55964bd28c6275`.
+- The training script SHA-256 is `1b93aebc43a851257552181bd4df00d6f0e68ebca9121d4a576358126bf3d910`. The E2 manifest remained `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; deployment `predict.py` remained `23b2779a6fd0718d245b5aeae3acb2777843de01bc4fabbe13c5897b7fe13604`; supplied `checkpoints/model_best.pt` remained `678d57190e979a13f7e6f808fb3cea6ed2f66e990cf545600d3d172b4a6c70e8`.
+- These are video-held-out results for the ten filename groups in this dataset, not a private-test score. Folder and CSV labels disagree for some files, and the filename prefix has not been independently verified against video metadata. The five validation sets differ in size and class mix. This experiment did not select a deployment model or change deployment inference.

@@ -1,0 +1,104 @@
+{
+  "fold": 0,
+  "seed": 42,
+  "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "checkpoint_sha256": "a45150add507def9b6934fdb3bfb9bc597cce53201612da8b473489115adb1fc",
+  "selected_epoch": 1,
+  "epochs_ran": 5,
+  "early_stopped": true,
+  "validation_video_ids": [
+    "7013",
+    "8610"
+  ],
+  "metrics": {
+    "n": 260,
+    "accuracy": 0.6807692307692308,
+    "macro_f1": 0.3991041298409127,
+    "per_class": {
+      "clipper": {
+        "support": 54,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "grasper": {
+        "support": 100,
+        "precision": 0.5844155844155844,
+        "recall": 0.9,
+        "f1": 0.7086614173228346
+      },
+      "hook": {
+        "support": 90,
+        "precision": 0.8207547169811321,
+        "recall": 0.9666666666666667,
+        "f1": 0.8877551020408163
+      },
+      "scissor": {
+        "support": 16,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        0,
+        47,
+        7,
+        0
+      ],
+      [
+        0,
+        90,
+        10,
+        0
+      ],
+      [
+        0,
+        3,
+        87,
+        0
+      ],
+      [
+        0,
+        14,
+        2,
+        0
+      ]
+    ]
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 0.17163565246509419,
+      "val_macro_f1": 0.39149999999999996,
+      "val_accuracy": 0.6692307692307692
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.1675070889539896,
+      "val_macro_f1": 0.3991041298409127,
+      "val_accuracy": 0.6807692307692308
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.17178568849465733,
+      "val_macro_f1": 0.374426730727233,
+      "val_accuracy": 0.6423076923076924
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.1695425208991685,
+      "val_macro_f1": 0.3786209545371849,
+      "val_accuracy": 0.6461538461538462
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.17445793610561175,
+      "val_macro_f1": 0.36878272907846954,
+      "val_accuracy": 0.6346153846153846
+    }
+  ],
+  "runtime_seconds": 60.740802916989196,
+  "peak_rss_mib": 558.1875
+}

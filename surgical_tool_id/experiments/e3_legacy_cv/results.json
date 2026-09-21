@@ -1,0 +1,431 @@
+{
+  "seed": 42,
+  "class_names": [
+    "clipper",
+    "grasper",
+    "hook",
+    "scissor"
+  ],
+  "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "pooled_metrics": {
+    "n": 1402,
+    "accuracy": 0.7382310984308131,
+    "macro_f1": 0.6164615218459867,
+    "per_class": {
+      "clipper": {
+        "support": 262,
+        "precision": 0.5863453815261044,
+        "recall": 0.5572519083969466,
+        "f1": 0.5714285714285714
+      },
+      "grasper": {
+        "support": 492,
+        "precision": 0.7303921568627451,
+        "recall": 0.9085365853658537,
+        "f1": 0.8097826086956522
+      },
+      "hook": {
+        "support": 505,
+        "precision": 0.8672199170124482,
+        "recall": 0.8277227722772277,
+        "f1": 0.8470111448834853
+      },
+      "scissor": {
+        "support": 143,
+        "precision": 0.4067796610169492,
+        "recall": 0.16783216783216784,
+        "f1": 0.23762376237623764
+      }
+    },
+    "confusion_matrix": [
+      [
+        146,
+        86,
+        26,
+        4
+      ],
+      [
+        20,
+        447,
+        14,
+        11
+      ],
+      [
+        37,
+        30,
+        418,
+        20
+      ],
+      [
+        46,
+        49,
+        24,
+        24
+      ]
+    ]
+  },
+  "sum_fold_runtime_seconds": 802.8961406259623,
+  "max_fold_peak_rss_mib": 594.484375,
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "a45150add507def9b6934fdb3bfb9bc597cce53201612da8b473489115adb1fc",
+      "selected_epoch": 1,
+      "epochs_ran": 5,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7013",
+        "8610"
+      ],
+      "metrics": {
+        "n": 260,
+        "accuracy": 0.6807692307692308,
+        "macro_f1": 0.3991041298409127,
+        "per_class": {
+          "clipper": {
+            "support": 54,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "grasper": {
+            "support": 100,
+            "precision": 0.5844155844155844,
+            "recall": 0.9,
+            "f1": 0.7086614173228346
+          },
+          "hook": {
+            "support": 90,
+            "precision": 0.8207547169811321,
+            "recall": 0.9666666666666667,
+            "f1": 0.8877551020408163
+          },
+          "scissor": {
+            "support": 16,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            0,
+            47,
+            7,
+            0
+          ],
+          [
+            0,
+            90,
+            10,
+            0
+          ],
+          [
+            0,
+            3,
+            87,
+            0
+          ],
+          [
+            0,
+            14,
+            2,
+            0
+          ]
+        ]
+      },
+      "runtime_seconds": 60.740802916989196,
+      "peak_rss_mib": 558.1875
+    },
+    {
+      "fold": 1,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "12abcc4e8a38c3cff11a59a4ffdbefb7b01ebb4f1ba4f2c95ded4fb257025e7d",
+      "selected_epoch": 6,
+      "epochs_ran": 16,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7201",
+        "7301",
+        "8611"
+      ],
+      "metrics": {
+        "n": 461,
+        "accuracy": 0.7418655097613883,
+        "macro_f1": 0.5884090338239865,
+        "per_class": {
+          "clipper": {
+            "support": 32,
+            "precision": 0.30985915492957744,
+            "recall": 0.6875,
+            "f1": 0.42718446601941745
+          },
+          "grasper": {
+            "support": 149,
+            "precision": 0.7727272727272727,
+            "recall": 0.912751677852349,
+            "f1": 0.8369230769230769
+          },
+          "hook": {
+            "support": 212,
+            "precision": 0.8656716417910447,
+            "recall": 0.8207547169811321,
+            "f1": 0.8426150121065376
+          },
+          "scissor": {
+            "support": 68,
+            "precision": 0.7692307692307693,
+            "recall": 0.14705882352941177,
+            "f1": 0.2469135802469136
+          }
+        },
+        "confusion_matrix": [
+          [
+            22,
+            3,
+            7,
+            0
+          ],
+          [
+            8,
+            136,
+            4,
+            1
+          ],
+          [
+            23,
+            13,
+            174,
+            2
+          ],
+          [
+            18,
+            24,
+            16,
+            10
+          ]
+        ]
+      },
+      "runtime_seconds": 203.74093583298963,
+      "peak_rss_mib": 572.109375
+    },
+    {
+      "fold": 2,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "1fbc0ea13612c335e6f891a99ef4cee5e54a42a2b9172442c361a3eef88127ac",
+      "selected_epoch": 3,
+      "epochs_ran": 7,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7414",
+        "7697"
+      ],
+      "metrics": {
+        "n": 174,
+        "accuracy": 0.7873563218390804,
+        "macro_f1": 0.8023951299009218,
+        "per_class": {
+          "clipper": {
+            "support": 67,
+            "precision": 0.8235294117647058,
+            "recall": 0.6268656716417911,
+            "f1": 0.7118644067796609
+          },
+          "grasper": {
+            "support": 62,
+            "precision": 0.7142857142857143,
+            "recall": 0.8870967741935484,
+            "f1": 0.7913669064748201
+          },
+          "hook": {
+            "support": 31,
+            "precision": 0.90625,
+            "recall": 0.9354838709677419,
+            "f1": 0.9206349206349206
+          },
+          "scissor": {
+            "support": 14,
+            "precision": 0.7857142857142857,
+            "recall": 0.7857142857142857,
+            "f1": 0.7857142857142857
+          }
+        },
+        "confusion_matrix": [
+          [
+            42,
+            21,
+            2,
+            2
+          ],
+          [
+            6,
+            55,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            29,
+            0
+          ],
+          [
+            2,
+            0,
+            1,
+            11
+          ]
+        ]
+      },
+      "runtime_seconds": 86.46080966698355,
+      "peak_rss_mib": 505.328125
+    },
+    {
+      "fold": 3,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "089dc54bf34adbfefde47c775ff5d529331bc7459248c8b3484a448326552284",
+      "selected_epoch": 17,
+      "epochs_ran": 18,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7654",
+        "7695"
+      ],
+      "metrics": {
+        "n": 266,
+        "accuracy": 0.7819548872180451,
+        "macro_f1": 0.6164226006275078,
+        "per_class": {
+          "clipper": {
+            "support": 49,
+            "precision": 0.5797101449275363,
+            "recall": 0.8163265306122449,
+            "f1": 0.6779661016949153
+          },
+          "grasper": {
+            "support": 98,
+            "precision": 0.8260869565217391,
+            "recall": 0.9693877551020408,
+            "f1": 0.8920187793427229
+          },
+          "hook": {
+            "support": 81,
+            "precision": 0.8902439024390244,
+            "recall": 0.9012345679012346,
+            "f1": 0.8957055214723927
+          },
+          "scissor": {
+            "support": 38,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            40,
+            5,
+            4,
+            0
+          ],
+          [
+            3,
+            95,
+            0,
+            0
+          ],
+          [
+            2,
+            6,
+            73,
+            0
+          ],
+          [
+            24,
+            9,
+            5,
+            0
+          ]
+        ]
+      },
+      "runtime_seconds": 231.84035891699023,
+      "peak_rss_mib": 594.484375
+    },
+    {
+      "fold": 4,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "51ad0b085d010077507e0912be89bf9ac19d75ebe79101cb2486e2b211e07c40",
+      "selected_epoch": 16,
+      "epochs_ran": 18,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "9152"
+      ],
+      "metrics": {
+        "n": 241,
+        "accuracy": 0.7095435684647303,
+        "macro_f1": 0.602551004926761,
+        "per_class": {
+          "clipper": {
+            "support": 60,
+            "precision": 0.7241379310344828,
+            "recall": 0.7,
+            "f1": 0.711864406779661
+          },
+          "grasper": {
+            "support": 83,
+            "precision": 0.7888888888888889,
+            "recall": 0.8554216867469879,
+            "f1": 0.8208092485549133
+          },
+          "hook": {
+            "support": 91,
+            "precision": 0.9016393442622951,
+            "recall": 0.6043956043956044,
+            "f1": 0.7236842105263158
+          },
+          "scissor": {
+            "support": 7,
+            "precision": 0.09375,
+            "recall": 0.42857142857142855,
+            "f1": 0.15384615384615383
+          }
+        },
+        "confusion_matrix": [
+          [
+            42,
+            10,
+            6,
+            2
+          ],
+          [
+            3,
+            71,
+            0,
+            9
+          ],
+          [
+            11,
+            7,
+            55,
+            18
+          ],
+          [
+            2,
+            2,
+            0,
+            3
+          ]
+        ]
+      },
+      "runtime_seconds": 220.11323329200968,
+      "peak_rss_mib": 433.75
+    }
+  ]
+}
