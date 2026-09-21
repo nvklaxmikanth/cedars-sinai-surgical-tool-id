@@ -176,3 +176,75 @@ Pooled confusion matrix: `[[146,86,26,4],[20,447,14,11],[37,30,418,20],[46,49,24
 - `experiments/e3_legacy_cv/results.json` contains exact per-fold and pooled metrics, confusion matrices, selected epoch, epoch history, runtime, peak RSS, and checkpoint hashes. Its SHA-256 is `23dddbb5694c041487f470e943f0679cd0fff3fad845a8a2ba55964bd28c6275`.
 - The training script SHA-256 is `1b93aebc43a851257552181bd4df00d6f0e68ebca9121d4a576358126bf3d910`. The E2 manifest remained `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; deployment `predict.py` remained `23b2779a6fd0718d245b5aeae3acb2777843de01bc4fabbe13c5897b7fe13604`; supplied `checkpoints/model_best.pt` remained `678d57190e979a13f7e6f808fb3cea6ed2f66e990cf545600d3d172b4a6c70e8`.
 - These are video-held-out results for the ten filename groups in this dataset, not a private-test score. Folder and CSV labels disagree for some files, and the filename prefix has not been independently verified against video metadata. The five validation sets differ in size and class mix. This experiment did not select a deployment model or change deployment inference.
+
+# E4 — raw-logit cross entropy versus E3 MSE
+
+E4 repeated the five E2 video folds with a separate fresh SmallCNN per fold. A source diff of E3 and E4 training scripts showed only the experiment description/path and the loss-related changes: integer class targets instead of one-hot targets, `nn.CrossEntropyLoss()` instead of `nn.MSELoss()`, and raw logits passed to that criterion instead of softmax probabilities. Both runs used the same seed 42, model architecture, grayscale preprocessing, DataLoader settings, Adam optimizer at 0.001, batch size 2, 30-epoch ceiling, original training-loss patience of 3 with minimum improvement 1e-4, validation macro-F1 checkpoint selection, and no augmentation, pretrained weights, or class weighting. E3 and deployment files were not edited.
+
+## Commands and validation
+
+Commands ran from `surgical_tool_id/`:
+
+| Command | Measured result |
+| --- | --- |
+| `diff -u experiments/e3_legacy_cv/train_cv.py experiments/e4_cross_entropy_cv/train_cv.py` | Diff limited to experiment paths/description and the target/loss changes described above. |
+| `for fold in 0 1 2 3 4; do PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e4_cross_entropy_cv/train_cv.py --fold "$fold" || exit; done` | Five separate CPU training processes completed. Selected epochs, metrics, runtime, and peak RSS are below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e4_cross_entropy_cv/train_cv.py --aggregate` | Wrote 1,402 unique-path OOF predictions and pooled metrics. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 18 tests passed in 18.075 s. E4 tests check tensor/architecture/settings parity with E3, integer targets, analytic raw-logit cross entropy, OOF coverage, recomputed metrics, selected-epoch maximal F1, checkpoint hashes, and predictions from reloaded checkpoints. E3 tests also passed. |
+| E3 fold-0 `train_fold(0)` rerun after loading the unchanged E3 script with a temporary output directory | Checkpoint SHA-256 matched `a45150add507def9b6934fdb3bfb9bc597cce53201612da8b473489115adb1fc`; OOF CSV SHA-256 matched `3098946cc1b5a6275ed318ee3f40108854065ca5bb9d9a51564deff45e84a745`. Rerun time 80.089 s, peak RSS 435.1 MiB. E3 committed outputs were not rewritten. |
+| `git diff --check` | No whitespace errors. |
+
+The five E4 runs took **1,563.102 s** in total inside `train_fold`, versus E3's **802.896 s**; this is an observed runtime comparison on this host, including different numbers of epochs. Maximum per-process peak RSS was **633.688 MiB** for E4 and **594.484 MiB** for E3. Peak RSS includes the interpreter and libraries. Timings exclude process startup and aggregation.
+
+## Fold metrics and direct E3 comparison
+
+All metrics use the E2 folder labels as the explicit single-label diagnostic assumption. Class order throughout is **clipper, grasper, hook, scissor**. The selected checkpoint is the validation macro-F1 maximum among epochs run, with the earliest epoch winning ties.
+
+| Fold | n | Selected epoch (zero-based) | Epochs run | E4 accuracy | E4 macro-F1 | E3 macro-F1 | E4 runtime s | E4 peak RSS MiB | Changed OOF labels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 260 | 20 | 25 | 0.865385 | 0.782046 | 0.399104 | 341.563 | 438.938 | 72 |
+| 1 | 461 | 3 | 26 | 0.783080 | 0.646652 | 0.588409 | 282.606 | 631.719 | 76 |
+| 2 | 174 | 7 | 22 | 0.781609 | 0.774133 | 0.802395 | 264.344 | 629.844 | 30 |
+| 3 | 266 | 15 | 25 | 0.823308 | 0.752606 | 0.616423 | 326.056 | 633.688 | 47 |
+| 4 | 241 | 14 | 25 | 0.771784 | 0.651161 | 0.602551 | 348.533 | 426.734 | 64 |
+
+Per-class E4 values are **precision / recall / F1**:
+
+| Fold | Clipper | Grasper | Hook | Scissor |
+| --- | --- | --- | --- | --- |
+| 0 | .796/.722/.757 | .885/.920/.902 | .897/.967/.930 | .700/.438/.538 |
+| 1 | .789/.469/.588 | .751/.933/.832 | .805/.915/.857 | .812/.191/.310 |
+| 2 | .844/.567/.679 | .711/.952/.814 | .909/.968/.938 | .692/.643/.667 |
+| 3 | .755/.755/.755 | .887/.959/.922 | .789/.926/.852 | .812/.342/.481 |
+| 4 | .827/.717/.768 | .792/.735/.763 | .940/.868/.903 | .107/.429/.171 |
+
+E4 confusion matrices, **rows = actual folder labels; columns = predictions**:
+
+| Fold | Matrix, four rows in class order above |
+| --- | --- |
+| 0 | `[[39,10,3,2],[3,92,5,0],[1,1,87,1],[6,1,2,7]]` |
+| 1 | `[[15,5,11,1],[2,139,6,2],[2,16,194,0],[0,25,30,13]]` |
+| 2 | `[[38,23,2,4],[2,59,1,0],[1,0,30,0],[4,1,0,9]]` |
+| 3 | `[[37,5,5,2],[4,94,0,0],[2,3,75,1],[6,4,15,13]]` |
+| 4 | `[[43,9,4,4],[2,61,0,20],[7,4,79,1],[0,3,1,3]]` |
+
+**Pooled E4 OOF:** 1,402 samples, accuracy **0.803852**, macro-F1 **0.713121**. E3 pooled accuracy was **0.738231**, macro-F1 **0.616462**. E4 minus E3 was **+0.065621 accuracy** and **+0.096659 macro-F1**. Fold 2's macro-F1 decreased by 0.028262; the other four increased. Pooled macro-F1 is computed from all OOF rows, not averaged from fold macro-F1 values.
+
+| Pooled class | Support | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| clipper | 262 | 0.803738 | 0.656489 | 0.722689 |
+| grasper | 492 | 0.801802 | 0.904472 | 0.850048 |
+| hook | 505 | 0.845455 | 0.920792 | 0.881517 |
+| scissor | 143 | 0.542169 | 0.314685 | 0.398230 |
+
+Pooled E4 confusion matrix: `[[172,52,25,13],[13,445,12,22],[13,24,465,3],[16,34,48,45]]`.
+
+Joining E3 and E4 OOF CSVs by complete relative path found **289 changed predictions** (folds 0–4: 72, 76, 30, 47, 64). Among changed rows, **160 went from wrong to correct**, **68 from correct to wrong**, and **61 remained wrong** under the folder-label assumption. The other 1,113 predicted labels were unchanged.
+
+## Artifacts and limits
+
+- E4 `oof_predictions.csv` SHA-256: `bb0b71297e962d2cd8c1eeeffcb987d701c08ab70cadf996cf71c84cbf946ff9`. It has one complete relative path per E2 sample.
+- E4 `results.json` SHA-256: `f208d13270e6db22e32a2c497e534afeb3f53c7918264effe62a92e6bed79a6a`. It stores exact per-class and pooled metrics, matrices, epoch histories, runtime, memory, and checkpoint hashes.
+- E4 `train_cv.py` SHA-256: `114932dca90fb14786dd7991db646b03f2a8b9d8477df9012cd715ddc65cdc93`. E4 test SHA-256: `0f422f0ec47cf4c22f340daa5fc0921754aa3a43b38e870a2476c2f162c454d4`.
+- E4 checkpoint SHA-256 by fold: `4b2ae5641307feeb662ea2b1256cd59ceed00f338477d89f12ff8c431ca8f80d`, `dcd7b0e9f2c362792863535ac43a99a2a090c99122def2e9893cc5c7491fd092`, `55b809b7f72b4fd03e61355050be526fe52bb2e22ac6c041c9fe32ac630d0446`, `042a85addc03eef62d68da1ac9ae706520e365caa16183b0e9269bb19ad74afc`, `bea47694454c4a11e0f5f83e9d397de97f90bf7738174d974424a379d7cd6536`.
+- This is a comparison on ten filename-derived video groups with the known folder/CSV label disagreements. It is not a private-test result or a deployment-model selection. Different losses changed training trajectories and early-stopping epochs; the runtime difference is not a per-epoch speed claim. Deployment inference and its checkpoint were unchanged.
