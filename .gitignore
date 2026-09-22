@@ -1,0 +1,14 @@
+# Private dataset and locally regenerated filename-level artifacts.
+surgical_tool_id/data/
+surgical_tool_id/labels.csv
+surgical_tool_id/splits/*.json
+**/*oof*.csv
+**/*probabilities.csv
+**/*cache*
+
+# Model binaries are excluded except for the public E10 deployment ensemble.
+**/*.pt
+**/*.pth
+!surgical_tool_id/checkpoints/e10/seed_17.pt
+!surgical_tool_id/checkpoints/e10/seed_42.pt
+!surgical_tool_id/checkpoints/e10/seed_123.pt

@@ -663,3 +663,11 @@ The sum of fit runtimes is **838.592 s**. All three final records have E2 manife
 | Copy only `predict.py`, `final_model.py`, `requirements-inference.txt`, and `checkpoints/e10/` to a fresh temporary directory; run `python predict.py --data-dir images --out result.csv` on one copied PNG | Isolated offline CPU CLI completed with a valid header and one row. No E7/E8/E9 source tree was present. |
 
 The tested host reports `torch.cuda.is_available() == False`; CUDA device selection is implemented but CUDA execution was **not measured**. The clean-copy test reused the host's installed PyTorch/Pillow versions (2.6.0/11.3.0); it did not download or reinstall packages. The 277-image directory is part of the full training set, so its predictions were used **only** for output-contract and repeatability checks, with no label-based performance calculation.
+
+# E12 — sanitized public repository
+
+E12 was performed in a separate clone and did not modify the original repository. A history-wide index filter removed the private dataset, supplied labels, per-image split manifests, OOF and probability CSVs, caches, all historical `.pt`/`.pth` files, and supplied `.DS_Store` metadata from every revision. Only the three E10 deployment checkpoints were restored in the final E12 commit. The rewritten E0–E11 commit map is documented in the repository-level `RELEASE_AUDIT.md`.
+
+The dataset is not distributed. `splits/video_folds.py` now accepts `--data-root` and `--out`, allowing an authorized user to regenerate the ignored manifest locally. Public tests use synthetic images for discovery, split integrity, preprocessing, checkpoint loading, ensemble probability shape, duplicate basenames, deterministic CSV output, and isolated inference. Tests requiring private rows or removed training artifacts explicitly skip.
+
+Post-filter reachable-blob scans, secret patterns, checkpoint hashes, documentation links, test results, fresh-clone inference, garbage collection, and final repository sizes were measured after the E12 commit and are reported in `RELEASE_AUDIT.md`. No remote was created and nothing was pushed. E9's **0.888744** remains grouped cross-validation OOF macro-F1 under the private folder-label assumption, not private held-out performance.

@@ -12,7 +12,7 @@ Images are opened with Pillow and converted to true RGB. The shorter side is res
 
 ## Training and evaluation evidence
 
-The E2 split manifest covers 1,402 images in ten filename-derived video groups. Each of five validation folds holds out entire groups, with zero train/validation video-ID overlap and exactly one OOF appearance per image. The group ID is assumed to be the first filename number; it was not independently checked against source video metadata. Folder names supply the evaluation labels, although the supplied CSV and folders disagree for some files.
+The private E2 split manifest covered 1,402 images in ten filename-derived video groups. It is excluded from this public repository and can be regenerated locally with [`video_folds.py`](surgical_tool_id/splits/video_folds.py) after an authorized user supplies the dataset. Each of five validation folds held out entire groups, with zero train/validation video-ID overlap and exactly one OOF appearance per image. The group ID was assumed to be the first filename number; it was not independently checked against source video metadata. Folder names supplied the evaluation labels, although the supplied CSV and folders disagreed for some files.
 
 | Experiment | Change | Pooled grouped OOF macro-F1 |
 | --- | --- | ---: |

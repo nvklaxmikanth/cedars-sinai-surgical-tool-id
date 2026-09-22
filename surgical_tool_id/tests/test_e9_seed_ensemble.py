@@ -19,6 +19,7 @@ aggregate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(aggregate)
 
 
+@unittest.skip("requires private filename-level OOF artifacts and historical checkpoints")
 class SeedEnsembleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

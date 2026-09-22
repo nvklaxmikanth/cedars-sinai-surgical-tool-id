@@ -48,6 +48,7 @@ class RgbCvTests(unittest.TestCase):
             self.assertFalse(torch.equal(image[0], image[1]))
             self.assertEqual(label, gray_label)
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_real_image_uses_rgb_resize_without_other_transform(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         sample = manifest['samples'][0]
@@ -58,6 +59,7 @@ class RgbCvTests(unittest.TestCase):
         expected = expected.view(128, 128, 3).permute(2, 0, 1) / 255.0
         self.assertTrue(torch.equal(actual, expected))
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_architecture_settings_and_fold_weights_match_e5(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         sample_by_path = {sample['path']: sample for sample in manifest['samples']}
@@ -74,6 +76,7 @@ class RgbCvTests(unittest.TestCase):
             self.assertTrue(torch.equal(new_weights, torch.tensor([
                 result['class_weights'][name] for name in manifest['class_names']])))
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_oof_metrics_and_selected_checkpoints_reproduce(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         summary = json.loads((E6 / 'results.json').read_text())

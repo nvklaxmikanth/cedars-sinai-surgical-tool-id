@@ -30,6 +30,7 @@ spec.loader.exec_module(train)
 
 
 class PartialResNetTests(unittest.TestCase):
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_only_layer4_and_head_train_with_ten_to_one_rates(self):
         torch.manual_seed(42)
         e7_initial_head = nn.Linear(512, 4)
@@ -64,6 +65,7 @@ class PartialResNetTests(unittest.TestCase):
             self.assertEqual(current["train_class_counts"], earlier["train_class_counts"])
             self.assertEqual(current["class_weights"], earlier["class_weights"])
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_frozen_prefix_and_all_batchnorm_buffers_remain_byte_identical(self):
         model = load_partial_model()
         before = frozen_state_hash(model)
@@ -87,6 +89,7 @@ class PartialResNetTests(unittest.TestCase):
         self.assertFalse(torch.equal(model.layer4[0].conv1.weight, original_layer4))
         self.assertTrue(all(p.grad is None for p in model.parameters() if not p.requires_grad))
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_offline_weights_and_prefix_match_full_model(self):
         self.assertEqual(hashlib.sha256(WEIGHTS_PATH.read_bytes()).hexdigest(), WEIGHTS_SHA256)
         manifest = json.loads((ROOT / "splits" / "video_grouped_fivefold_v1.json").read_text())
@@ -100,6 +103,7 @@ class PartialResNetTests(unittest.TestCase):
             self.assertTrue(torch.allclose(model(image), forward_from_layer3(model, fresh)))
         self.assertEqual(json.loads((E8 / "feature_cache_meta.json").read_text())["n"], 1402)
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_oof_checkpoints_metrics_and_offline_inference_reproduce(self):
         manifest = json.loads((ROOT / "splits" / "video_grouped_fivefold_v1.json").read_text())
         summary = json.loads((E8 / "results.json").read_text())

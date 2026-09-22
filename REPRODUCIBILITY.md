@@ -1,6 +1,6 @@
 # Reproducibility
 
-Run commands from `surgical_tool_id/` unless stated otherwise. Inference requires Python 3.11, `torch==2.6.0`, and `Pillow==11.3.0` as recorded in [`requirements-inference.txt`](surgical_tool_id/requirements-inference.txt). The measured training environment also used NumPy and, for split comparisons, scikit-learn; its complete resolved environment was not locked. The official pretrained ResNet18 weights are bundled at [`experiments/e7_frozen_resnet18/weights/`](surgical_tool_id/experiments/e7_frozen_resnet18/weights/resnet18-f37072fd.pth), SHA-256 `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`. Training and deployment can run without downloading weights once the recorded dependencies are installed.
+Run commands from `surgical_tool_id/` unless stated otherwise. Inference requires Python 3.11, `torch==2.6.0`, and `Pillow==11.3.0` as recorded in [`requirements-inference.txt`](surgical_tool_id/requirements-inference.txt). The measured training environment also used NumPy and, for split comparisons, scikit-learn; its complete resolved environment was not locked. The E7/E8 training code expects the official ResNet18 weight file with SHA-256 `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`, but that source weight is excluded from the public repository. Deployment uses the three self-contained E10 states and does not need that removed file.
 
 ## Verify a checkout
 
@@ -15,7 +15,7 @@ python check_submission.py
 
 ## Reproduce the experiment path
 
-The immutable [E2 manifest](surgical_tool_id/splits/video_grouped_fivefold_v1.json) holds all 1,402 complete relative paths, folder labels, and filename-derived video IDs. Its SHA-256 is `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`. Regenerate it with `python splits/video_folds.py` only if you intend to compare bytes and verify the same source dataset. Existing fold and OOF artifacts are committed; training anew will overwrite those outputs.
+The dataset and E2 manifest are private and excluded. After an authorized user places the original layout locally, regenerate the ignored manifest with `python splits/video_folds.py --data-root /authorized/path/cholec-tinytools --out splits/video_grouped_fivefold_v1.json`. The original manifest SHA-256 was `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; a match requires the identical private corpus. Historical OOF rows, caches, pretrained source weights, and fold checkpoints are not distributed, so E3–E10 retraining requires authorized local inputs beyond this public checkout.
 
 E3–E6 each run the five E2 folds through their corresponding `experiments/<experiment>/train_cv.py --fold <0..4>` and then `--aggregate`. E7 additionally requires `--cache` for its frozen-feature cache; E8 requires `--cache` for its ignored layer-3 activation cache. Example E8 and E9 sequence:
 

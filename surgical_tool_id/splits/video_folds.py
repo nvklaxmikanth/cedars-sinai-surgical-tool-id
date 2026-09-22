@@ -4,6 +4,7 @@ Run from the repository's surgical_tool_id directory:
     python splits/video_folds.py
 """
 
+import argparse
 import hashlib
 import json
 import re
@@ -122,10 +123,18 @@ def build_manifest(samples):
 
 
 def main():
-    manifest = build_manifest(load_samples())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-root", type=Path, default=DATA_ROOT,
+                        help="authorized local dataset root containing partition/class/PNG")
+    parser.add_argument("--out", type=Path, default=MANIFEST_PATH,
+                        help="local generated manifest path (ignored by Git by default)")
+    args = parser.parse_args()
+    manifest = build_manifest(load_samples(args.data_root))
+    manifest["data_root"] = str(args.data_root.resolve())
     content = json.dumps(manifest, indent=2) + "\n"
-    MANIFEST_PATH.write_text(content)
-    print(f"wrote {MANIFEST_PATH} ({len(manifest['samples'])} samples, "
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(content)
+    print(f"wrote {args.out} ({len(manifest['samples'])} samples, "
           f"{manifest['feasible_partitions']} feasible partitions, "
           f"score={manifest['balance_score']:.6f}, "
           f"sha256={hashlib.sha256(content.encode()).hexdigest()})")

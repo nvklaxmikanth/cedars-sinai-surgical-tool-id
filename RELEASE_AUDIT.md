@@ -1,43 +1,58 @@
-# E11 release audit
+# E12 sanitized public release audit
 
-Audit scope: local `main` through E10 commit `6a26422c2014349b1adc39da98d60a88fae5146a`, with E11 documentation added separately. No remote was configured or created. No files were removed, models retrained, predictions changed, or content pushed. This is a release inventory and verification record, **not an authorization to publish**.
+This repository was created as a separate filtered copy. The original assessment repository was not modified. E12 did not create a remote or push content.
 
-## Git and tracked-file inventory
+## Public contents and exclusions
 
-| Check | Measured finding |
+The history filter removed these classes from every rewritten revision:
+
+- `surgical_tool_id/data/` and `surgical_tool_id/labels.csv`;
+- JSON split manifests containing per-image paths or labels;
+- OOF and aligned-probability CSVs;
+- feature caches and cache metadata;
+- every `.pt` and `.pth` historical model artifact;
+- supplied `.DS_Store` metadata.
+
+E12 then added only the three required E10 full-state checkpoints. Source code, documentation, aggregate metric JSON, per-fold metric explanations, and non-filename-level experiment records remain. `.gitignore` prevents the private dataset, generated manifests, OOF files, caches, and extra model binaries from being added accidentally.
+
+The dataset is not distributed. An authorized user must place it outside Git or under the ignored local `surgical_tool_id/data/` tree and run [`video_folds.py`](surgical_tool_id/splits/video_folds.py) with `--data-root` and `--out` to regenerate the ignored split manifest. No open source license was added because no license terms were provided.
+
+## Rewritten commit map
+
+| Original | Sanitized | Subject |
+| --- | --- | --- |
+| `b41f1b71bb8234581223669b2b0755f1133336d4` | `b0c8afea9a4ea84d9cc7aaacc8e4288102af6fcc` | Baseline: untouched supplied repository |
+| `eae2df9590cb2df185ee237935e22d4138031970` | `926ebc4864f9e0f77866ca2af997dcfcae99d5d4` | E0 inference decoupling |
+| `10c573998a6e5c3bc850471f422b4d2735d51840` | `ef0635323c8ad4472447c37c3ba393529b2cadd9` | E1 class decoding |
+| `d05a1dc82f19d192dacfe8f6cf5eb9691eb2a1af` | `37f9d091e50d7a7806e8b1fcdb0e59c051b7138e` | E2 grouped splits |
+| `533122dcf23b40da148ffbfbb091506018394ef0` | `002b0bb3a3b50625df690ee6b67a30af1262efdd` | E3 legacy baseline |
+| `dbb37f20ae13d6f0465c6aca38036b65847e2280` | `dd45f7f77ddbceb47afadb137439cc36ce43801c` | E4 cross entropy |
+| `d2f7409bcbab0a70db1ec2e538cf1ca9d126f1e8` | `bec026b2d4269af073fdd2b96e682f2e1b446be1` | E5 weighted cross entropy |
+| `a52a160af9821da9c5ccb7601d193b5554d6cb4d` | `4568a042df7e6de7548160cce9c03b4d8f70f288` | E6 RGB input |
+| `c0ca9836bb5ee615e9e7612b4dac9ef53be3294c` | `c88cd031880314be546839996b066c06001faca2` | E7 frozen ResNet18 |
+| `250f21e22a0a81e7e0ec9b53ec05ef43497e87f6` | `66c05a989c70c92f373dcaad74a5e9c52b9ba009` | E8 partial fine tuning |
+| `b60c0804a0b5c8241e7b43df022240f305311707` | `91b2d73678b206ddfe9eb7a9342749b129c8bdaa` | E9 seed ensemble |
+| `6a26422c2014349b1adc39da98d60a88fae5146a` | `c050c43db06ba72956ed33df4099bfe162848ee6` | E10 deployment |
+| `e5b68d2d9ce796b2ea9f184c56c6aca51a3b69f6` | `cfdf2423545b7667f37941a14c4169b687d235ab` | E11 documentation audit |
+
+## Verification evidence
+
+| Check | Measured result |
 | --- | --- |
-| `git log --oneline --all` | Eleven commits: untouched baseline, then E0–E10 as separate commits. |
-| `git ls-files` and file sizes | 1,613 tracked files before E11 documentation, 787,395,331 working-tree bytes. 1,402 PNGs total 28,990,177 bytes; 47 `.pt` files total 708,650,442 bytes; one `.pth` is 46,830,571 bytes; 51 CSVs total 1,812,369 bytes; 62 JSONs total 808,260 bytes; one notebook. |
-| Historical objects via `git rev-list --objects --all` and `git cat-file --batch-check` | 1,628 distinct history blobs; largest blob 46,830,571 bytes. No current tracked file or historical blob exceeded 50 MiB or 100 MiB. The `.git` directory occupied about 704 MiB (`du -sh .git`) at audit time. |
-| Dataset, caches, and outputs | All 1,402 source PNGs and `labels.csv` are tracked. One E7 `feature_cache.pt` and E7/E8 cache metadata are tracked. The larger E8 layer-3 cache is ignored locally. At least 149 experiment CSV/JSON/PT artifacts are tracked, including E9 fold checkpoints and E10 full-state checkpoints. The supplied baseline also tracked older checkpoints and `.DS_Store`. |
-| Environments and remotes | No tracked `.env`, virtualenv, `__pycache__`, or `.pyc` files were found. `git remote -v` produced no configured remote. |
-| Pattern-based secret scan | History-wide `git grep -I -E -l` found no matches for AWS access-key IDs, common GitHub/OpenAI token prefixes, PEM private-key headers, or simple `password`, `api_key`, and `access_token` assignments. This limited pattern scan cannot rule out all secrets, binary payloads, or sensitive imagery. |
+| Public test suite | 49 tests discovered in 3.534 s: **25 passed, 24 skipped**, zero failures. Skips name the required private dataset or removed historical artifact. |
+| Documentation links | 41 repository-local Markdown links checked; zero missing. |
+| Reachable Git objects after reference expiry and aggressive GC | 232 reachable objects, including 148 blobs totaling 135,527,399 uncompressed bytes. Only `refs/heads/main` remained. |
+| Original dataset object comparison | Zero of the 1,402 original dataset image blob IDs remained reachable. |
+| Reachable path scan | Zero dataset, `labels.csv`, split-manifest JSON, OOF, probability, or cache paths. Exactly three model paths remained: the E10 seeds 17, 42, and 123. |
+| Reachable content scan | Zero image-extension paths, image-magic blobs, or occurrences of any original dataset basename. |
+| Reachable secret scan | Zero matches for AWS access-key IDs, common GitHub/OpenAI token prefixes, PEM private-key headers, and simple password/API-key/access-token assignments. This is a bounded pattern scan, not a guarantee that no sensitive semantic content exists. |
+| Checkpoint SHA-256 | Seed 17 `9dd2105b617fccba565a678ec54f40cac6006a2317075edd65e8379a036dc3bf`; seed 42 `97cd6548719638a4a46d53a67d2d6cbff72b16a3bb60b840c0edcd9269eb46d4`; seed 123 `fb3e313f0faf99d701f45cb222d53c615f2dd534aededc0d454583f78006cef5`. All matched the deployment manifest. |
+| Post-GC size | Working tree approximately 248.2 MiB; `.git` approximately 119.2 MiB; packed Git data approximately 119.1 MiB. |
 
-[GitHub's current documentation](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github) says regular Git files over 50 MiB trigger a warning and files over 100 MiB are blocked. [GitHub repository guidance](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits) recommends small objects and using Git LFS or external storage for large assets. The measured largest file is below those upload thresholds, but the 704 MiB local Git history and many 33–47 MB checkpoints are material clone-size and maintenance costs. A future release may need a separately reviewed lightweight distribution or LFS migration; rewriting this history was outside E11.
+Fresh-clone offline inference and final commit checks were run after creating the final E12 commit and are reported with the release handoff.
 
-## Licensing and provenance
+## Performance interpretation and remaining limitations
 
-No `LICENSE`, `COPYING`, or `NOTICE` file is tracked. The repository does not document the source license or redistribution authorization for the 1,402 surgical images or `labels.csv`. That missing authorization is a **release blocker for public distribution** until the dataset owner confirms permitted use and privacy handling. No external provenance check can establish those permissions from the local files alone.
+E9's **0.888744 pooled grouped OOF macro-F1** is cross-validation performance under the private folder-label assumption. It is not private held-out performance. The OOF rows are excluded from the public repository; aggregate metrics and experiment explanations remain for audit context.
 
-The E7 bundled pretrained file matches SHA-256 `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`. [TorchVision's official ResNet18 source](https://docs.pytorch.org/vision/main/_modules/torchvision/models/resnet.html) identifies the matching `IMAGENET1K_V1` weight URL, and [TorchVision identifies its code license as BSD-3-Clause](https://github.com/pytorch/vision/blob/main/CITATION.cff). This supports provenance of the source code and URL; it does **not by itself resolve** redistribution terms for the bundled weight file, ImageNet-trained assets, or this repository's copied/custom architecture. A human maintainer must confirm applicable notices and permissions before publication.
-
-## Verification and interpretation
-
-The release checks compared checkpoint bytes to [`checkpoints/e10/manifest.json`](surgical_tool_id/checkpoints/e10/manifest.json), ran the full tests, checked local Markdown links, and ran the CLI from a fresh isolated Git clone. Deployment requires only [`predict.py`](surgical_tool_id/predict.py), [`final_model.py`](surgical_tool_id/final_model.py), [`requirements-inference.txt`](surgical_tool_id/requirements-inference.txt), and the E10 checkpoint bundle. The isolated clone used already installed PyTorch/Pillow; package-index installation and CUDA execution were not verified.
-
-| Command/check | Measured result |
-| --- | --- |
-| Parse Markdown links in the six E11 documents and check non-HTTP paths against the repository | **45 local links checked; zero missing.** |
-| `shasum -a 256 surgical_tool_id/checkpoints/e10/seed_17.pt surgical_tool_id/checkpoints/e10/seed_42.pt surgical_tool_id/checkpoints/e10/seed_123.pt` | All three hashes matched the package manifest: seed 17 `9dd2105b617fccba565a678ec54f40cac6006a2317075edd65e8379a036dc3bf`, seed 42 `97cd6548719638a4a46d53a67d2d6cbff72b16a3bb60b840c0edcd9269eb46d4`, seed 123 `fb3e313f0faf99d701f45cb222d53c615f2dd534aededc0d454583f78006cef5`. |
-| `git clone --no-local --quiet . /tmp/e11_release_clone` from committed E10, then `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` in the clone | Fresh clone contained **no ignored E8 feature cache**. All **49 tests passed in 39.594 s**. |
-| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES='' python predict.py --data-dir data/cholec-tinytools/validation --out /tmp/e11_clone_predictions.csv` in the clone | CLI exited 0 and wrote **277 rows**. `validate_schema` returned `{'ok': True, 'reason': None, 'n_rows': 277}`. `cmp` found the clone CSV byte identical to the E10 reference; both have SHA-256 `b8e7214847d6b4f67b369d9b7a5638fae90da4bea9efb2778f56e1be1481d46a`. No labels were scored. |
-
-E3 pooled video-grouped OOF macro-F1 was **0.616462**; E9 ensemble pooled video-grouped OOF macro-F1 was **0.888744** under folder labels. **0.888744 is grouped cross-validation performance, not private held-out performance.** The E10 fits used all 1,402 images and have no independent accuracy or F1 estimate.
-
-## Remaining manual release steps
-
-1. Obtain written dataset and label redistribution/privacy authorization; inspect the imagery and metadata for sensitive content before public distribution.
-2. Select and document a repository license and verify upstream model-weight and code notices with the applicable rights holders.
-3. Decide whether the full dataset and historical fold checkpoints belong in the public repository; if a smaller release is needed, review its artifact manifest and history strategy before changing Git history.
-4. Install the pinned inference requirements in a truly fresh CPU environment and a supported CUDA environment; run the documented CLI and compare the output contract on each.
-5. Obtain an independent, source-verified private or external video holdout before making a generalization or clinical performance claim. Review folder/CSV label conflicts and the filename-to-video mapping.
+The public checkout supports offline inference with the three E10 checkpoints. It cannot reproduce private-data experiments without the authorized dataset, regenerated manifest, and removed pretrained/historical training assets. Private test methods are retained but skipped when those artifacts are absent. CPU inference is verified; CUDA execution remains unmeasured. Dataset provenance, label disagreements, external validation, clinical suitability, and checkpoint redistribution rights remain unresolved. The repository has no license grant.

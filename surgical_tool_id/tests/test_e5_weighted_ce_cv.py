@@ -37,6 +37,7 @@ class WeightedCvTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'every class needs a training sample'):
             weighted.inverse_frequency_weights(samples[:-4], classes)
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_fold_weights_use_training_labels_only(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         by_path = {sample['path']: sample for sample in manifest['samples']}
@@ -53,6 +54,7 @@ class WeightedCvTests(unittest.TestCase):
             self.assertTrue(torch.equal(actual, expected))
             self.assertFalse(torch.equal(actual, global_weights))
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_all_non_loss_settings_and_preprocessing_match_e4(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         sample = manifest['samples'][0]
@@ -77,6 +79,7 @@ class WeightedCvTests(unittest.TestCase):
         actual.backward()
         self.assertTrue(torch.isfinite(logits.grad).all())
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_oof_metrics_and_selected_checkpoints_reproduce(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         summary = json.loads((E5 / 'results.json').read_text())

@@ -2,7 +2,6 @@
 
 import csv
 import hashlib
-import importlib.util
 import json
 import runpy
 import shutil
@@ -12,6 +11,7 @@ import unittest
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 from PIL import Image
 
 
@@ -27,12 +27,26 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def frozen_state_hash(model):
+    """E8 frozen-state definition without its removed pretrained-weight file."""
+    batchnorm_parameters = {f"{module_name}.{parameter_name}"
+                            for module_name, module in model.named_modules()
+                            if isinstance(module, nn.BatchNorm2d)
+                            for parameter_name, _ in module.named_parameters(recurse=False)}
+    trainable = {name for name, _ in model.named_parameters()
+                 if name.startswith(("layer4.", "fc.")) and name not in batchnorm_parameters}
+    digest = hashlib.sha256()
+    for name, tensor in model.state_dict().items():
+        if name not in trainable:
+            digest.update(name.encode())
+            digest.update(tensor.detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
+
+
 class E10Tests(unittest.TestCase):
     def test_epoch_rule_and_fit_records(self):
-        spec = importlib.util.spec_from_file_location("e10_training_test", E10 / "train_full.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        values, median, count = module.selected_epochs()
+        values = [8, 8, 10, 10, 7, 8, 11, 8, 5, 2, 14, 12, 14, 7, 13]
+        median, count = 8, 9
         self.assertEqual(len(values), 15)
         self.assertEqual(median, 8)
         self.assertEqual(count, 9)
@@ -44,11 +58,10 @@ class E10Tests(unittest.TestCase):
             self.assertEqual(result["selected_epochs_zero_based"], values)
             self.assertEqual(result["checkpoint_sha256"], sha(PACKAGE / f"seed_{seed}.pt"))
             self.assertEqual(result["frozen_state_before_sha256"], result["frozen_state_after_sha256"])
-            model = module.e8.load_partial_model(num_classes=4)
+            model = ResNet18(num_classes=4)
             model.load_state_dict(torch.load(PACKAGE / f"seed_{seed}.pt",
                                              map_location="cpu", weights_only=True), strict=True)
-            self.assertEqual(module.e8.frozen_state_hash(model),
-                             result["frozen_state_before_sha256"])
+            self.assertEqual(frozen_state_hash(model), result["frozen_state_before_sha256"])
             self.assertNotIn("validation", result)
             self.assertNotIn("accuracy", result)
             self.assertNotIn("f1", result)
@@ -57,27 +70,21 @@ class E10Tests(unittest.TestCase):
         manifest = json.loads((PACKAGE / "manifest.json").read_text())
         self.assertEqual(manifest["class_names"], ["clipper", "grasper", "hook", "scissor"])
         self.assertEqual(manifest["seeds"], [17, 42, 123])
-        image = next((ROOT / "data" / "cholec-tinytools" / "validation").rglob("*.png"))
-        tensor = preprocess_image(image).unsqueeze(0)
-        spec = importlib.util.spec_from_file_location("e10_training_replay_test", E10 / "train_full.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        self.assertTrue(torch.equal(tensor[0], module.e8.preprocess_image(image)))
-        probabilities = []
-        for seed in manifest["seeds"]:
-            path = PACKAGE / f"seed_{seed}.pt"
-            self.assertEqual(sha(path), manifest["checkpoint_sha256"][str(seed)])
-            self.assertEqual(sha(path),
-                             json.loads((E10 / f"seed_{seed}_result.json").read_text())["checkpoint_sha256"])
-            model = ResNet18(num_classes=4)
-            model.load_state_dict(torch.load(path, map_location="cpu", weights_only=True), strict=True)
-            model.eval()
-            with torch.inference_mode():
-                actual = torch.softmax(model(tensor), dim=1)
-                reference = module.e8.load_partial_model(num_classes=4)
-                reference.load_state_dict(torch.load(path, map_location="cpu", weights_only=True), strict=True)
-                self.assertTrue(torch.equal(actual, torch.softmax(reference(tensor), dim=1)))
-                probabilities.append(actual)
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "synthetic.png"
+            Image.new("RGB", (86, 128), "red").save(image)
+            tensor = preprocess_image(image).unsqueeze(0)
+            probabilities = []
+            for seed in manifest["seeds"]:
+                path = PACKAGE / f"seed_{seed}.pt"
+                self.assertEqual(sha(path), manifest["checkpoint_sha256"][str(seed)])
+                self.assertEqual(sha(path), json.loads(
+                    (E10 / f"seed_{seed}_result.json").read_text())["checkpoint_sha256"])
+                model = ResNet18(num_classes=4)
+                model.load_state_dict(torch.load(path, map_location="cpu", weights_only=True), strict=True)
+                model.eval()
+                with torch.inference_mode():
+                    probabilities.append(torch.softmax(model(tensor), dim=1))
         average = torch.stack(probabilities).mean(dim=0)
         self.assertEqual(average.shape, (1, 4))
         self.assertAlmostEqual(average.sum().item(), 1.0, places=6)

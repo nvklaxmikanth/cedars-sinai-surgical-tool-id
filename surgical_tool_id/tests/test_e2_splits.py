@@ -1,58 +1,58 @@
-import json
-import sys
+import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
 
+from PIL import Image
 
+import sys
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'splits'))
-from video_folds import MANIFEST_PATH, N_FOLDS, build_manifest, load_samples
+sys.path.insert(0, str(ROOT / "splits"))
+from video_folds import N_FOLDS, build_manifest, load_samples
 
 
 class VideoFoldTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.manifest = json.loads(MANIFEST_PATH.read_text())
-
-    def test_complete_paths_and_folder_labels(self):
-        samples = self.manifest['samples']
-        self.assertEqual(len(samples), 1402)
-        self.assertEqual(len({sample['path'] for sample in samples}), len(samples))
-        for sample in samples:
-            path = ROOT / self.manifest['data_root'] / sample['path']
-            self.assertTrue(path.is_file(), path)
-            self.assertEqual(path.parent.name, sample['label'])
-            self.assertEqual(path.stem.split('_')[0], sample['video_id'])
+    def synthetic_samples(self):
+        classes = ("clipper", "grasper", "hook", "scissor")
+        return [{"path": f"train/{label}/{video}_{index}.png",
+                 "label": label, "video_id": str(video)}
+                for video in range(10, 15) for index, label in enumerate(classes)]
 
     def test_no_video_leakage_and_one_validation_appearance(self):
-        samples = self.manifest['samples']
-        all_paths = {sample['path'] for sample in samples}
-        by_path = {sample['path']: sample for sample in samples}
+        manifest = build_manifest(self.synthetic_samples())
+        by_path = {sample["path"]: sample for sample in manifest["samples"]}
         seen = Counter()
-        self.assertEqual(len(self.manifest['folds']), N_FOLDS)
-        for fold in self.manifest['folds']:
-            train = set(fold['train_paths'])
-            validation = set(fold['validation_paths'])
-            self.assertEqual(len(train), len(fold['train_paths']))
-            self.assertEqual(len(validation), len(fold['validation_paths']))
+        self.assertEqual(len(manifest["folds"]), N_FOLDS)
+        for fold in manifest["folds"]:
+            train, validation = set(fold["train_paths"]), set(fold["validation_paths"])
             self.assertFalse(train & validation)
-            self.assertEqual(train | validation, all_paths)
-            train_videos = {by_path[p]['video_id'] for p in train}
-            validation_videos = {by_path[p]['video_id'] for p in validation}
-            self.assertFalse(train_videos & validation_videos)
-            self.assertEqual(train_videos, set(fold['train_video_ids']))
-            self.assertEqual(validation_videos, set(fold['validation_video_ids']))
+            self.assertEqual(train | validation, set(by_path))
+            self.assertFalse({by_path[p]["video_id"] for p in train} &
+                             {by_path[p]["video_id"] for p in validation})
             seen.update(validation)
-            for side in (train, validation):
-                self.assertEqual({by_path[p]['label'] for p in side},
-                                 set(self.manifest['class_names']))
-        self.assertEqual(seen, Counter({path: 1 for path in all_paths}))
+        self.assertEqual(seen, Counter({path: 1 for path in by_path}))
 
-    def test_manifest_reproducibility(self):
-        generated = build_manifest(load_samples())
-        self.assertEqual(json.dumps(generated, indent=2) + '\n', MANIFEST_PATH.read_text())
+    def test_local_dataset_discovery_and_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for video in range(10, 15):
+                for index, label in enumerate(("clipper", "grasper", "hook", "scissor")):
+                    path = root / "train" / label / f"{video}_{index}.png"
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    Image.new("RGB", (2, 2)).save(path)
+            samples = load_samples(root)
+            self.assertEqual(len(samples), 20)
+            self.assertEqual(build_manifest(samples)["class_names"],
+                             ["clipper", "grasper", "hook", "scissor"])
+
+    def test_invalid_filename_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "train" / "clipper" / "private.png"
+            path.parent.mkdir(parents=True)
+            Image.new("RGB", (2, 2)).save(path)
+            with self.assertRaisesRegex(ValueError, "filename lacks a video/frame ID"):
+                load_samples(Path(tmp))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

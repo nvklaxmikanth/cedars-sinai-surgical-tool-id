@@ -44,6 +44,7 @@ class LegacyCvTests(unittest.TestCase):
 
         self.assertEqual(update_hashes(), update_hashes())
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_architecture_matches_legacy_checkpoint_shapes(self):
         model = SmallCNN(4)
         supplied = torch.load(ROOT / 'checkpoints' / 'model_best.pt',
@@ -64,6 +65,7 @@ class LegacyCvTests(unittest.TestCase):
         self.assertEqual(result['per_class']['c']['f1'], 0.0)
         self.assertAlmostEqual(result['macro_f1'], (2 / 3 + 2 / 3 + 0 + 2 / 3) / 4)
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_oof_coverage_and_recomputed_metrics(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         results = json.loads((E3 / 'results.json').read_text())
@@ -89,6 +91,7 @@ class LegacyCvTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
                              fold['checkpoint_sha256'])
 
+    @unittest.skip("requires private dataset or removed historical model artifact")
     def test_selected_checkpoints_reproduce_oof_predictions(self):
         manifest = json.loads((ROOT / 'splits' / 'video_grouped_fivefold_v1.json').read_text())
         sample_by_path = {sample['path']: sample for sample in manifest['samples']}
