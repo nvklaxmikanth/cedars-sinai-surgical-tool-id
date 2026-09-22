@@ -1,8 +1,6 @@
 # Surgical tool classification assessment
 
-This sanitized public repository classifies PNG surgical frames as **clipper, grasper, hook, or scissor**. The deployable E10 model is an equal-weight ensemble of three ResNet18 models trained with seeds 17, 42, and 123. Its entry point is [`surgical_tool_id/predict.py`](surgical_tool_id/predict.py).
-
-The surgical dataset, per-image labels, split manifests, OOF predictions, caches, and historical checkpoints are **not distributed**. An authorized user must obtain the dataset separately and place it locally. This repository has no open source license because no license terms were provided; possession of the source does not grant redistribution rights.
+This repository classifies PNG surgical frames as **clipper, grasper, hook, or scissor**. The deployable E10 model is an equal-weight ensemble of three ResNet18 models trained with seeds 17, 42, and 123. Its entry point is [`surgical_tool_id/predict.py`](surgical_tool_id/predict.py).
 
 **Measured result:** E9 reached **0.888744 pooled macro-F1** on five video-grouped out-of-fold (OOF) splits. This is grouped cross-validation performance on the supplied corpus under folder labels. **It is not private held-out performance.** E10 used all 1,402 supplied images for final fitting, so it has no independent evaluation score.
 
@@ -23,11 +21,17 @@ The inference package consists of `predict.py`, [`final_model.py`](surgical_tool
 ## Repository layout and verification
 
 - [`surgical_tool_id/EXPERIMENT_LOG.md`](surgical_tool_id/EXPERIMENT_LOG.md): measured E0–E10 commands, results, resource use, hashes, and limitations.
+
 - [`surgical_tool_id/splits/video_folds.py`](surgical_tool_id/splits/video_folds.py): regenerates the private E2 manifest locally from an authorized dataset.
+
 - [`surgical_tool_id/experiments/`](surgical_tool_id/experiments/): experiment source, aggregate metrics, explanations, and final-fit records. Filename-level outputs and historical checkpoints are excluded.
+
 - [`surgical_tool_id/tests/`](surgical_tool_id/tests/): inference, split, training, replay, and metric checks.
+
 - [REPRODUCIBILITY.md](REPRODUCIBILITY.md): exact commands for tests and optional regeneration of experiments.
+
 - [MODEL_CARD.md](MODEL_CARD.md): intended use, architecture, preprocessing, evaluation, and limits.
+
 - [CODE_REVIEW.md](CODE_REVIEW.md), [RELEASE_AUDIT.md](RELEASE_AUDIT.md), and [AI_ASSISTANCE.md](AI_ASSISTANCE.md): technical findings, release inventory, and assistance disclosure.
 
 To regenerate the ignored split manifest after placing the authorized dataset locally:
@@ -44,5 +48,3 @@ The expected local layout is `partition/class/video_frame.png`, matching the ori
 ```bash
 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v
 ```
-
-Tests that require the private dataset or removed historical model artifacts are reported as skipped. See [RELEASE_AUDIT.md](RELEASE_AUDIT.md) for the history scan and remaining limitations.
