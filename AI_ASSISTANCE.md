@@ -1,0 +1,7 @@
+# AI assistance disclosure
+
+OpenAI Codex assisted with the read-only repository audit and the implementation, test, measurement, and documentation work recorded as E0–E11. The human requester set the experiment sequence and constraints, including video-grouped evaluation, one-change-at-a-time comparisons, fixed seeds, and the prohibition on scoring the full-data E10 fits. Codex wrote experiment scripts, inference changes, tests, result summaries, and this documentation, and ran local commands through the workspace tools.
+
+The numeric claims in this repository are tied to committed result files and measured command output in [`EXPERIMENT_LOG.md`](surgical_tool_id/EXPERIMENT_LOG.md), [MODEL_CARD.md](MODEL_CARD.md), and [RELEASE_AUDIT.md](RELEASE_AUDIT.md). AI-generated prose and code are not evidence by themselves. E9's 0.888744 pooled macro-F1 was calculated from grouped OOF predictions under folder labels; it was not obtained from a private test set. E10 full-data training has no accuracy or F1 report.
+
+Codex did not obtain independent patient, procedure, or video metadata; did not adjudicate folder/CSV label conflicts; did not run private held-out evaluation; and did not verify dataset redistribution rights. For E11 it consulted official GitHub documentation for current repository file-size limits and official TorchVision sources for the pretrained weight source and upstream license context. The release audit distinguishes those external references from local measured facts. Human review remains necessary before public distribution or clinical use.
