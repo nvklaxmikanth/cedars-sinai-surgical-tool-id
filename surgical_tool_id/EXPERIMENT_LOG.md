@@ -552,3 +552,80 @@ Joining OOF CSVs by complete relative path found **271 E8-versus-E7 changed pred
 - E8 `oof_predictions.csv` SHA-256: `d734bd3c9fcef6f7d5fc85c9ac744393dd750404043bb8d544ecbee616ece2e9`. E8 `results.json` SHA-256: `a25d502a8ef9dfdfc999b7d91793506987f4e0b3f3b118c7debafd8cb7b362c9`. E8 `comparison_to_e6_e7.json` SHA-256: `b51736c4370a87ea76f762c015b35e464e0bad5cf6eb598710d2a151ec9c31df`.
 - E8 checkpoint SHA-256 by fold: `0a0cb4e0cdcdc839ceea9bf4854fbb3c820f5abb040228a0f9203080611e4c19`, `4d9caf6142a48f7bcf0bf12748d326b5261ea7ace9e592a1797e4070f2055148`, `1f00be2e0628a603f9d14ede24f026cf433a216a4eb8001fcaf6c525e4513e00`, `cd5261b84bbb7cab3726a30ec633f66be70082905a032af6eb56e6d3007ea281`, `4799dda62ee506c73a1e2c2dadde9595bb5b8e93aa178b8de55cc6de08753ba9`.
 - These are video-held-out folder-label diagnostics on ten filename-derived groups, not private-test results. Fold 4 has only seven scissor validation images; its scissor F1 is 0.308. The activation cache is not committed, so `--cache` must be rerun before training from a fresh checkout. The offline inference test reloaded each selected checkpoint and reproduced the first validation image of every fold. No claim of byte-identical logits across every batch size is made. Existing `predict.py` and its checkpoint remain unchanged.
+
+# E9 — E8 seed robustness and equal-weight OOF ensemble
+
+E9 repeats the **unchanged E8 training function** with seeds 17 and 123, each on all five E2 video-grouped folds. E8's seed-42 results and checkpoints remain untouched. The E8 frozen layer-3 activation cache is reused: it depends only on fixed official pretrained weights and fixed RGB ImageNet preprocessing, and its frozen-state SHA-256 is checked in every new fold. Architecture, trainable layer-4 convolution/downsample and head tensors, fully frozen BatchNorm state, class weights, weighted cross entropy, Adam learning rates **0.0001 / 0.001**, batch size 2, 30-epoch limit, training-loss patience, and highest-validation-macro-F1 checkpoint selection match E8. Only the random seed and output directory differ. No full-dataset fit or deployment inference change occurred.
+
+For each seed and fold, E9 reloaded the selected checkpoint and computed softmax probabilities for every validation image in E8's batch-of-16 inference path. Replay rejected a checkpoint if any predicted index or fold metric differed from its stored OOF result, or if any frozen tensor or BatchNorm state hash differed. All **15** selected checkpoints passed. E9 then aligned rows by complete relative path and checked folder label, video ID, and fold before averaging the three probability vectors with weights **1/3 each**. The selection rule is strict: select the ensemble only when its **pooled OOF macro-F1** exceeds the best individual seed's pooled macro-F1.
+
+## Commands and verification
+
+Commands ran from `surgical_tool_id/` on CPU:
+
+| Command | Measured result |
+| --- | --- |
+| `shasum -a 256 experiments/e8_partial_resnet18/feature_cache.pt experiments/e8_partial_resnet18/results.json experiments/e8_partial_resnet18/oof_predictions.csv` | Existing hashes were `4a89a32e0b05b7ccb49d9c4e8412ff210aba44eab869db837676a21b9a4d1770`, `a25d502a8ef9dfdfc999b7d91793506987f4e0b3f3b118c7debafd8cb7b362c9`, and `d734bd3c9fcef6f7d5fc85c9ac744393dd750404043bb8d544ecbee616ece2e9`, respectively. Aggregation and tests confirmed the two committed E8 hashes remained unchanged. |
+| `for seed in 17 123; do for fold in 0 1 2 3 4; do mkdir -p "experiments/e9_seed_ensemble/seed_${seed}"; PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e9_seed_ensemble/train_seeds.py --seed "$seed" --fold "$fold" > "experiments/e9_seed_ensemble/seed_${seed}/fold_${fold}_console.log" 2>&1 || exit 1; done; done` | Ten serial new-seed fits completed. Console logs are local and excluded from Git. Fold runtime, memory, and selected epoch appear below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e9_seed_ensemble/aggregate.py` | Replayed all 15 selected checkpoints, aligned 1,402 OOF rows per seed, wrote probability CSVs, three-seed statistics, and the ensemble comparison. Aggregation took **72.293 s**; replay subtotals were 25.251 s for seed 17, 23.425 s for seed 42, and 23.281 s for seed 123. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | **46 tests passed in 39.418 s.** E9 tests reject duplicate, missing, mislabeled, or misfolded paths; check seed-42 preservation and E8 fold-setting parity; check all checkpoint hashes and frozen-state hashes; recompute stored metrics; replay one full-image prediction per fold and seed; recompute ensemble probability means and sample standard deviations; and check the strict pooled-macro-F1 selection rule. E0–E8 tests also passed. |
+
+The new seed-17 fold fits totaled **1,943.930 s** with maximum process peak RSS **790.875 MiB**. Seed 123 totaled **2,209.002 s** with maximum peak RSS **933.828 MiB**. The preserved seed-42 E8 fits totaled **1,424.002 s** with maximum peak RSS **769.297 MiB**. These are single CPU observations; differing stopping epochs affect runtime. E8's shared feature extraction took 79.776 s in its original run and was not rerun for E9.
+
+## Individual seeds, across-seed variation, and ensemble
+
+Metrics use the E2 **folder labels as an explicit diagnostic assumption**; known folder/CSV label disagreements remain. Class order is **clipper, grasper, hook, scissor**. Fold and pooled confusion matrices have rows = actual folder label and columns = predicted label. Standard deviations below are **sample** standard deviations over the three seed results (`ddof=1`). All folds' exact per-class precision, recall, F1, support, and confusion matrices are in `results.json`.
+
+| Seed | Fold | n | Selected epoch (zero-based) | Epochs run | Accuracy | Macro-F1 | Runtime s | Peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 17 | 0 | 260 | 8 | 10 | 0.950000 | 0.910162 | 301.637 | 750.250 |
+| 17 | 1 | 461 | 8 | 13 | 0.872017 | 0.793818 | 376.578 | 751.125 |
+| 17 | 2 | 174 | 10 | 15 | 0.977011 | 0.970512 | 482.772 | 606.672 |
+| 17 | 3 | 266 | 10 | 13 | 0.951128 | 0.948504 | 402.878 | 761.500 |
+| 17 | 4 | 241 | 7 | 12 | 0.896266 | 0.773711 | 380.065 | 790.875 |
+| 42 (E8) | 0 | 260 | 8 | 10 | 0.934615 | 0.870037 | 302.691 | 608.891 |
+| 42 (E8) | 1 | 461 | 11 | 12 | 0.876356 | 0.813998 | 330.473 | 608.797 |
+| 42 (E8) | 2 | 174 | 8 | 9 | 0.971264 | 0.942050 | 279.163 | 769.297 |
+| 42 (E8) | 3 | 266 | 5 | 7 | 0.894737 | 0.885021 | 226.382 | 733.938 |
+| 42 (E8) | 4 | 241 | 2 | 9 | 0.921162 | 0.775124 | 285.293 | 737.141 |
+| 123 | 0 | 260 | 14 | 15 | 0.930769 | 0.876405 | 481.754 | 753.078 |
+| 123 | 1 | 461 | 12 | 15 | 0.876356 | 0.810761 | 452.391 | 783.641 |
+| 123 | 2 | 174 | 14 | 18 | 0.948276 | 0.941257 | 540.799 | 877.969 |
+| 123 | 3 | 266 | 7 | 12 | 0.947368 | 0.938220 | 351.335 | 895.781 |
+| 123 | 4 | 241 | 13 | 14 | 0.883817 | 0.756183 | 382.722 | 933.828 |
+
+| Fold | Across-seed accuracy mean ± sample SD | Across-seed macro-F1 mean ± sample SD | Ensemble accuracy | Ensemble macro-F1 |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 0.938462 ± 0.010176 | 0.885535 ± 0.021564 | 0.953846 | 0.906054 |
+| 1 | 0.874910 ± 0.002505 | 0.806193 ± 0.010838 | 0.882863 | 0.817146 |
+| 2 | 0.965517 ± 0.015205 | 0.951273 ± 0.016666 | 0.971264 | 0.956632 |
+| 3 | 0.931078 ± 0.031528 | 0.923915 ± 0.034074 | 0.958647 | 0.955999 |
+| 4 | 0.900415 ± 0.019015 | 0.768339 ± 0.010552 | 0.896266 | 0.767973 |
+| **Pooled** | **0.912981 ± 0.004942** | **0.874067 ± 0.008415** | **0.923680** | **0.888744** |
+
+| Model | Pooled accuracy | Pooled macro-F1 | Clipper P/R/F1 | Grasper P/R/F1 | Hook P/R/F1 | Scissor P/R/F1 |
+| --- | ---: | ---: | --- | --- | --- | --- |
+| Seed 17 | 0.918688 | 0.883778 | .896/.924/.910 | .933/.929/.931 | .962/.964/.963 | .750/.713/.731 |
+| Seed 42 | 0.910128 | 0.869483 | .879/.912/.895 | .928/.923/.926 | .946/.970/.958 | .756/.650/.699 |
+| Seed 123 | 0.910128 | 0.868940 | .907/.889/.898 | .929/.931/.930 | .968/.958/.963 | .664/.706/.685 |
+| Equal-weight ensemble | **0.923680** | **0.888744** | .913/.916/.914 | .937/.943/.940 | .970/.962/.966 | .734/.734/.734 |
+| Across-seed mean ± SD | 0.912981 ± 0.004942 | 0.874067 ± 0.008415 | P .894±.014 / R .908±.017 / F1 .901±.008 | P .930±.002 / R .928±.004 / F1 .929±.003 | P .959±.011 / R .964±.006 / F1 .962±.003 | P .724±.051 / R .690±.034 / F1 .705±.024 |
+
+Pooled confusion matrices:
+
+| Model | Four rows |
+| --- | --- |
+| Seed 17 | `[[242,6,5,9],[12,457,6,17],[2,8,487,8],[14,19,8,102]]` |
+| Seed 42 | `[[239,8,6,9],[17,454,8,13],[0,7,490,8],[16,20,14,93]]` |
+| Seed 123 | `[[233,14,3,12],[5,458,5,24],[0,6,484,15],[19,15,8,101]]` |
+| Ensemble | `[[240,7,6,9],[8,464,3,17],[0,7,486,12],[15,17,6,105]]` |
+
+The ensemble's pooled macro-F1 **0.888744** exceeds the best individual seed, 17 at **0.883778**, by **0.004966**. Therefore `results.json` selects the **equal-weight ensemble**. Compared with seed 17, the ensemble changes 47 of 1,402 OOF predictions: 23 wrong-to-correct, 16 correct-to-wrong, and 8 wrong-to-different-wrong under the folder-label assumption. The ensemble's fold-4 macro-F1 is 0.767973, below all three individual fold-4 macro-F1 values; pooled macro-F1 is the declared selection metric. This selection uses the same OOF labels used to evaluate the candidates and is not an independent private-test estimate.
+
+## Artifacts and limits
+
+- E9 `results.json` SHA-256: `3fcc81f80320e7735cc98cbe69e90e6a8b6126a78dc9f3361c86f3aeae6528d9`. It contains full fold/pooled metrics, per-class precision/recall/F1, confusion matrices, across-seed mean/sample SD for accuracy, macro-F1 and per-class metrics, runtime/memory, replay hashes, and the strict selection decision.
+- Aligned OOF probability CSV SHA-256: seed 17 `fceb807eaa3d3d43def4b0431c9bf0d22a6d6a7e47ec07d8c666099f7ecfe04a`, seed 42 `526c9f3343d8612dbb1d8aa5da4ace7f77511d8a80876614f11619b1822d09c9`, seed 123 `470eabe98112b7f6221fb79d5d02bccfc5762451364cc4ba460d8e660de16f61`, ensemble `8a2e3564ff921d4be71419b11e995b5fa008662add2e37a7e430d20f768505a5`.
+- New seed-17 checkpoint SHA-256 by fold: `c3af2407c414d3b98bdfa44a2aa7154f266fd89941cb28ea990aeaba4a37cdb1`, `9a98354e03e250708e9bfd0425bf078731294b24f34ed9d2c826bd15cff9502b`, `5cdde0ba3317be259d307ea62801a6bd99416d9cc3be76a60ca340d42528459c`, `4d943066d37bec4c33aee8f6da6803b302b731e89d70e25ed74590daabf44324`, `bbd1d5b977a3ecc968c809e37d19631c096b9e132a8336ded5ca3156a3b0aec9`.
+- New seed-123 checkpoint SHA-256 by fold: `662e8425329382d5079256aa449594fa3018badf24570bde98df5e70955af2e8`, `4e4fb9bf0e6c501a7ce7dc68dbdbd33703b617f3f52c10efcde6ed6437a78915`, `b3588f63ef2a96376da6d4ba4c296142d661f9c6b6c2692c3da3392b097fa41e`, `9ac5043c1b63a9a0c6b51e578922ba174d2e32dadcb49fba968aede938e14525`, `f4a88e9aefa9a392233092d8f68906d3e79f6b6d152e65b0b06e911793e9b0ae`.
+- The E2 manifest hash is `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`; official pretrained weight hash is `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`; frozen-state hash for every fold and replay is `6c344528608ded2e880a4f337df3613846570225a1def765d10d60c2500445ec`. Training depends on E8's regenerable activation cache and dataset images; checkpoint replay uses the cache. Existing E8 seed-42 artifacts and deployment inference remain unchanged.
