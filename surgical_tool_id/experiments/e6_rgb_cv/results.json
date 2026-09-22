@@ -1,0 +1,491 @@
+{
+  "seed": 42,
+  "class_names": [
+    "clipper",
+    "grasper",
+    "hook",
+    "scissor"
+  ],
+  "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "pooled_metrics": {
+    "n": 1402,
+    "accuracy": 0.8174037089871612,
+    "macro_f1": 0.7541319680268727,
+    "per_class": {
+      "clipper": {
+        "support": 262,
+        "precision": 0.6909722222222222,
+        "recall": 0.7595419847328244,
+        "f1": 0.7236363636363637
+      },
+      "grasper": {
+        "support": 492,
+        "precision": 0.8767123287671232,
+        "recall": 0.9105691056910569,
+        "f1": 0.8933200398803589
+      },
+      "hook": {
+        "support": 505,
+        "precision": 0.8972746331236897,
+        "recall": 0.8475247524752475,
+        "f1": 0.8716904276985744
+      },
+      "scissor": {
+        "support": 143,
+        "precision": 0.5634920634920635,
+        "recall": 0.4965034965034965,
+        "f1": 0.5278810408921933
+      }
+    },
+    "confusion_matrix": [
+      [
+        199,
+        28,
+        19,
+        16
+      ],
+      [
+        16,
+        448,
+        9,
+        19
+      ],
+      [
+        34,
+        23,
+        428,
+        20
+      ],
+      [
+        39,
+        12,
+        21,
+        71
+      ]
+    ]
+  },
+  "sum_fold_runtime_seconds": 1925.400126500026,
+  "max_fold_peak_rss_mib": 621.859375,
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "73e12e8d35cc7db9b1dc79e01115fd2176deda635c2b182d3342bbddba7be151",
+      "selected_epoch": 8,
+      "epochs_ran": 22,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7013",
+        "8610"
+      ],
+      "train_class_counts": {
+        "clipper": 208,
+        "grasper": 392,
+        "hook": 415,
+        "scissor": 127
+      },
+      "class_weights": {
+        "clipper": 1.0900334119796753,
+        "grasper": 0.578385055065155,
+        "hook": 0.5463299751281738,
+        "scissor": 1.785251498222351
+      },
+      "metrics": {
+        "n": 260,
+        "accuracy": 0.926923076923077,
+        "macro_f1": 0.84750666000666,
+        "per_class": {
+          "clipper": {
+            "support": 54,
+            "precision": 0.8620689655172413,
+            "recall": 0.9259259259259259,
+            "f1": 0.8928571428571429
+          },
+          "grasper": {
+            "support": 100,
+            "precision": 0.9795918367346939,
+            "recall": 0.96,
+            "f1": 0.9696969696969697
+          },
+          "hook": {
+            "support": 90,
+            "precision": 0.9456521739130435,
+            "recall": 0.9666666666666667,
+            "f1": 0.956043956043956
+          },
+          "scissor": {
+            "support": 16,
+            "precision": 0.6666666666666666,
+            "recall": 0.5,
+            "f1": 0.5714285714285715
+          }
+        },
+        "confusion_matrix": [
+          [
+            50,
+            1,
+            1,
+            2
+          ],
+          [
+            0,
+            96,
+            4,
+            0
+          ],
+          [
+            0,
+            1,
+            87,
+            2
+          ],
+          [
+            8,
+            0,
+            0,
+            8
+          ]
+        ]
+      },
+      "runtime_seconds": 382.686555125023,
+      "peak_rss_mib": 505.484375
+    },
+    {
+      "fold": 1,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "9e2eb61e7800a5c2b1635a92a8624699c69d70250f93c207c6b2c403a8492b11",
+      "selected_epoch": 21,
+      "epochs_ran": 24,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7201",
+        "7301",
+        "8611"
+      ],
+      "train_class_counts": {
+        "clipper": 230,
+        "grasper": 343,
+        "hook": 293,
+        "scissor": 75
+      },
+      "class_weights": {
+        "clipper": 0.7243484854698181,
+        "grasper": 0.48571476340293884,
+        "hook": 0.5686011910438538,
+        "scissor": 2.2213354110717773
+      },
+      "metrics": {
+        "n": 461,
+        "accuracy": 0.7396963123644251,
+        "macro_f1": 0.6414113346382965,
+        "per_class": {
+          "clipper": {
+            "support": 32,
+            "precision": 0.3146067415730337,
+            "recall": 0.875,
+            "f1": 0.46280991735537197
+          },
+          "grasper": {
+            "support": 149,
+            "precision": 0.8466666666666667,
+            "recall": 0.8523489932885906,
+            "f1": 0.8494983277591973
+          },
+          "hook": {
+            "support": 212,
+            "precision": 0.8956043956043956,
+            "recall": 0.7688679245283019,
+            "f1": 0.8274111675126903
+          },
+          "scissor": {
+            "support": 68,
+            "precision": 0.575,
+            "recall": 0.3382352941176471,
+            "f1": 0.42592592592592593
+          }
+        },
+        "confusion_matrix": [
+          [
+            28,
+            1,
+            2,
+            1
+          ],
+          [
+            12,
+            127,
+            3,
+            7
+          ],
+          [
+            28,
+            12,
+            163,
+            9
+          ],
+          [
+            21,
+            10,
+            14,
+            23
+          ]
+        ]
+      },
+      "runtime_seconds": 354.1508035000006,
+      "peak_rss_mib": 588.78125
+    },
+    {
+      "fold": 2,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "719059ce2ce677f0ce7a597e9247471f81f4472a2195a51d72d1f1675bab5efa",
+      "selected_epoch": 12,
+      "epochs_ran": 30,
+      "early_stopped": false,
+      "validation_video_ids": [
+        "7414",
+        "7697"
+      ],
+      "train_class_counts": {
+        "clipper": 195,
+        "grasper": 430,
+        "hook": 474,
+        "scissor": 129
+      },
+      "class_weights": {
+        "clipper": 1.1846556663513184,
+        "grasper": 0.5372275710105896,
+        "hook": 0.48735830187797546,
+        "scissor": 1.790758490562439
+      },
+      "metrics": {
+        "n": 174,
+        "accuracy": 0.8218390804597702,
+        "macro_f1": 0.7892365901584515,
+        "per_class": {
+          "clipper": {
+            "support": 67,
+            "precision": 0.8653846153846154,
+            "recall": 0.6716417910447762,
+            "f1": 0.7563025210084034
+          },
+          "grasper": {
+            "support": 62,
+            "precision": 0.8472222222222222,
+            "recall": 0.9838709677419355,
+            "f1": 0.9104477611940298
+          },
+          "hook": {
+            "support": 31,
+            "precision": 0.7567567567567568,
+            "recall": 0.9032258064516129,
+            "f1": 0.823529411764706
+          },
+          "scissor": {
+            "support": 14,
+            "precision": 0.6923076923076923,
+            "recall": 0.6428571428571429,
+            "f1": 0.6666666666666666
+          }
+        },
+        "confusion_matrix": [
+          [
+            45,
+            10,
+            8,
+            4
+          ],
+          [
+            1,
+            61,
+            0,
+            0
+          ],
+          [
+            2,
+            1,
+            28,
+            0
+          ],
+          [
+            4,
+            0,
+            1,
+            9
+          ]
+        ]
+      },
+      "runtime_seconds": 467.5273420830199,
+      "peak_rss_mib": 591.875
+    },
+    {
+      "fold": 3,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "5a677348402ea75155966e5c7b8b461364bfc685c67af3ec16d4fb9b52599c9c",
+      "selected_epoch": 1,
+      "epochs_ran": 24,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "7654",
+        "7695"
+      ],
+      "train_class_counts": {
+        "clipper": 213,
+        "grasper": 394,
+        "hook": 424,
+        "scissor": 105
+      },
+      "class_weights": {
+        "clipper": 0.982429563999176,
+        "grasper": 0.5311103463172913,
+        "hook": 0.49353182315826416,
+        "scissor": 1.9929285049438477
+      },
+      "metrics": {
+        "n": 266,
+        "accuracy": 0.849624060150376,
+        "macro_f1": 0.8195416933852907,
+        "per_class": {
+          "clipper": {
+            "support": 49,
+            "precision": 0.8125,
+            "recall": 0.7959183673469388,
+            "f1": 0.8041237113402061
+          },
+          "grasper": {
+            "support": 98,
+            "precision": 0.9565217391304348,
+            "recall": 0.8979591836734694,
+            "f1": 0.9263157894736843
+          },
+          "hook": {
+            "support": 81,
+            "precision": 0.8571428571428571,
+            "recall": 0.8888888888888888,
+            "f1": 0.8727272727272727
+          },
+          "scissor": {
+            "support": 38,
+            "precision": 0.6428571428571429,
+            "recall": 0.7105263157894737,
+            "f1": 0.6749999999999999
+          }
+        },
+        "confusion_matrix": [
+          [
+            39,
+            3,
+            4,
+            3
+          ],
+          [
+            2,
+            88,
+            2,
+            6
+          ],
+          [
+            2,
+            1,
+            72,
+            6
+          ],
+          [
+            5,
+            0,
+            6,
+            27
+          ]
+        ]
+      },
+      "runtime_seconds": 350.2384509999829,
+      "peak_rss_mib": 621.859375
+    },
+    {
+      "fold": 4,
+      "seed": 42,
+      "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+      "checkpoint_sha256": "064e7b7f037185df815725111fa69dcc7adfe084824a297f5e196b7c4b0e1f6d",
+      "selected_epoch": 16,
+      "epochs_ran": 24,
+      "early_stopped": true,
+      "validation_video_ids": [
+        "9152"
+      ],
+      "train_class_counts": {
+        "clipper": 202,
+        "grasper": 409,
+        "hook": 414,
+        "scissor": 136
+      },
+      "class_weights": {
+        "clipper": 1.153700590133667,
+        "grasper": 0.5697983503341675,
+        "hook": 0.5629166960716248,
+        "scissor": 1.7135846614837646
+      },
+      "metrics": {
+        "n": 241,
+        "accuracy": 0.8091286307053942,
+        "macro_f1": 0.6943161285575297,
+        "per_class": {
+          "clipper": {
+            "support": 60,
+            "precision": 0.9024390243902439,
+            "recall": 0.6166666666666667,
+            "f1": 0.7326732673267328
+          },
+          "grasper": {
+            "support": 83,
+            "precision": 0.7676767676767676,
+            "recall": 0.9156626506024096,
+            "f1": 0.8351648351648352
+          },
+          "hook": {
+            "support": 91,
+            "precision": 0.9512195121951219,
+            "recall": 0.8571428571428571,
+            "f1": 0.9017341040462428
+          },
+          "scissor": {
+            "support": 7,
+            "precision": 0.21052631578947367,
+            "recall": 0.5714285714285714,
+            "f1": 0.3076923076923077
+          }
+        },
+        "confusion_matrix": [
+          [
+            37,
+            13,
+            4,
+            6
+          ],
+          [
+            1,
+            76,
+            0,
+            6
+          ],
+          [
+            2,
+            8,
+            78,
+            3
+          ],
+          [
+            1,
+            2,
+            0,
+            4
+          ]
+        ]
+      },
+      "runtime_seconds": 370.7969747919997,
+      "peak_rss_mib": 619.71875
+    }
+  ]
+}

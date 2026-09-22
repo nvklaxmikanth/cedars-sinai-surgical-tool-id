@@ -333,3 +333,76 @@ Joining E4 and E5 OOF CSVs by complete relative path found **210 changed predict
 - E5 training-script SHA-256: `7bc19b21566e9c3453819892150e359fde6b79943080e3e90bc1320c61e21994`. E5 test SHA-256: `a33e1ed5c0e3c6f70baaff2c2d92dcfb3f232fe3882e3586d65e8c761762e9d9`.
 - E5 checkpoint SHA-256 by fold: `17de74b864b7b0c4693e560160d1f2e98e5a9a699bcdf07470026773c6bdb767`, `541647e8483d500890b020365134688c4eef0926807d2f31534193ad01c1b067`, `9663b4b640c8c0ef7a8f393b6b0c763960e91c3ccfbc90b12eb6a85947703354`, `74e019f89817857a5cc076d44ba6ae10774510ceb6e52027740f9581e5cd9267`, `ff2ac474f7c50a1ca756ed3390665bf12bc2437a150fd0299ddfd463432af8df`.
 - This selection is based on video-held-out folder-label diagnostics for ten filename-derived groups with known CSV/folder label disagreements. It is not a private-test result. Selecting E5 by pooled macro-F1 does not authorize or enact deployment; `predict.py` and its checkpoint remain unchanged.
+
+# E6 — true RGB pixels versus E5 grayscale replication
+
+E6 repeats the five E2 video folds with the E5 architecture, fold-training-only inverse-frequency class weights, loss, optimizer, seed, batch size, 128×128 resize, float32 `/255` scaling, training-loss patience, and per-fold validation macro-F1 checkpoint selection. The sole training-pipeline change is that `FrameDataset` reads true RGB pixels as channel-first tensors instead of converting to grayscale and replicating one channel three times. No augmentation, pretrained weights, or class weighting change was introduced. E5 and deployment files were not edited.
+
+## Commands and verification
+
+Commands ran from `surgical_tool_id/`:
+
+| Command | Measured result |
+| --- | --- |
+| `diff -u experiments/e5_weighted_ce_cv/train_cv.py experiments/e6_rgb_cv/train_cv.py` | Training-path difference was only the RGB image conversion and channel layout. Experiment paths and comparison labels changed in aggregation. |
+| `for fold in 0 1 2 3 4; do PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e6_rgb_cv/train_cv.py --fold "$fold" || exit; done` | Five separate CPU training processes completed. Per-fold runtime and process peak RSS appear below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e6_rgb_cv/train_cv.py --aggregate` | Wrote 1,402 unique-path OOF predictions, pooled metrics, and `comparison_to_e5.json`. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 29 tests passed in 33.005 s. E6 tests check RGB channel separation on a known color image, exact resized RGB pixels and scaling on a dataset image, architecture/settings/weight parity with E5, OOF coverage and metrics, selected epochs, checkpoint hashes, reloaded-checkpoint predictions, and pooled-macro-F1 selection. E5 tests also passed. |
+| E5 fold-0 `train_fold(0)` rerun after loading the unchanged E5 script with a temporary output directory | Checkpoint SHA-256 matched `17de74b864b7b0c4693e560160d1f2e98e5a9a699bcdf07470026773c6bdb767`; fold OOF CSV SHA-256 matched `f33ba7f597ae923ec4b368a15a9620c2ff9797cb2fc2db22f0d4b7205ed45cab`. Rerun took 251.201 s and peaked at 602.5 MiB RSS. E5 artifacts were not rewritten. |
+| `git diff --check` | No whitespace errors. |
+
+The five E6 runs totaled **1,925.400 s** inside `train_fold`, versus E5's **1,379.055 s**. Maximum fold-process peak RSS was **621.859 MiB** for E6 and **614.625 MiB** for E5. These are single-run observations, not a controlled per-epoch speed measurement; training epoch counts and Python image conversion differed. RSS includes the interpreter and libraries.
+
+## Fold metrics and direct E5 comparison
+
+Metrics use E2 folder labels as the explicit single-label diagnostic assumption. Class order is **clipper, grasper, hook, scissor**. Per-fold checkpoints were selected by validation macro-F1; **pooled OOF macro-F1 is the primary E5 versus E6 comparison metric**. No deployment-model selection was made.
+
+| Fold | n | Selected epoch (zero-based) | Epochs run | E6 accuracy | E6 macro-F1 | E5 macro-F1 | Runtime s | Peak RSS MiB | Changed OOF labels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 260 | 8 | 22 | 0.926923 | 0.847507 | 0.781285 | 382.687 | 505.484 | 31 |
+| 1 | 461 | 21 | 24 | 0.739696 | 0.641411 | 0.660824 | 354.151 | 588.781 | 102 |
+| 2 | 174 | 12 | 30 | 0.821839 | 0.789237 | 0.828877 | 467.527 | 591.875 | 30 |
+| 3 | 266 | 1 | 24 | 0.849624 | 0.819542 | 0.790955 | 350.238 | 621.859 | 47 |
+| 4 | 241 | 16 | 24 | 0.809129 | 0.694316 | 0.630953 | 370.797 | 619.719 | 54 |
+
+Per-class E6 values are **precision / recall / F1**:
+
+| Fold | Clipper | Grasper | Hook | Scissor |
+| --- | --- | --- | --- | --- |
+| 0 | .862/.926/.893 | .980/.960/.970 | .946/.967/.956 | .667/.500/.571 |
+| 1 | .315/.875/.463 | .847/.852/.849 | .896/.769/.827 | .575/.338/.426 |
+| 2 | .865/.672/.756 | .847/.984/.910 | .757/.903/.824 | .692/.643/.667 |
+| 3 | .812/.796/.804 | .957/.898/.926 | .857/.889/.873 | .643/.711/.675 |
+| 4 | .902/.617/.733 | .768/.916/.835 | .951/.857/.902 | .211/.571/.308 |
+
+E6 confusion matrices, **rows = actual folder labels; columns = predictions**, in the class order above:
+
+| Fold | Matrix, four rows |
+| --- | --- |
+| 0 | `[[50,1,1,2],[0,96,4,0],[0,1,87,2],[8,0,0,8]]` |
+| 1 | `[[28,1,2,1],[12,127,3,7],[28,12,163,9],[21,10,14,23]]` |
+| 2 | `[[45,10,8,4],[1,61,0,0],[2,1,28,0],[4,0,1,9]]` |
+| 3 | `[[39,3,4,3],[2,88,2,6],[2,1,72,6],[5,0,6,27]]` |
+| 4 | `[[37,13,4,6],[1,76,0,6],[2,8,78,3],[1,2,0,4]]` |
+
+**Pooled E6 OOF:** 1,402 samples, accuracy **0.817404**, macro-F1 **0.754132**. E5 pooled accuracy was **0.796006** and macro-F1 **0.728552**. E6 gained **0.021398 accuracy** and **0.025580 macro-F1**. By the declared primary metric, `comparison_to_e5.json` selects **E6**. Fold 1 and fold 2 macro-F1 declined, while the pooled score increased. Pooled macro-F1 is computed from all OOF predictions, not averaged from fold macro-F1 values.
+
+| Pooled class | Support | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| clipper | 262 | 0.690972 | 0.759542 | 0.723636 |
+| grasper | 492 | 0.876712 | 0.910569 | 0.893320 |
+| hook | 505 | 0.897275 | 0.847525 | 0.871690 |
+| scissor | 143 | 0.563492 | 0.496503 | 0.527881 |
+
+Pooled E6 confusion matrix: `[[199,28,19,16],[16,448,9,19],[34,23,428,20],[39,12,21,71]]`.
+
+Joining E5 and E6 OOF CSVs by complete relative path found **264 changed predictions** (folds 0–4: 31, 102, 30, 47, 54). Under the folder-label assumption, **119 went from wrong to correct**, **89 from correct to wrong**, and **56 remained wrong**. The other 1,138 predicted labels were unchanged.
+
+## Artifacts and limits
+
+- E6 `oof_predictions.csv` SHA-256: `ea93c81d8059fba16b56965a36f879f105be260a6e69432c504d37bec64bad25`. It contains one complete relative path per E2 sample.
+- E6 `results.json` SHA-256: `e8cb61da221c7840a799e2c05c34e9635a72a34f070f1b913cd8c2c1222d0b2c`. It contains exact fold weights, metrics, matrices, histories, resources, and checkpoint hashes.
+- E6 `comparison_to_e5.json` SHA-256: `20d1a1b1f24d51e968013900577a08952a4a3e2d4cda1e41a897e13d69e462c2`. Primary metric: pooled macro-F1; selected experiment: E6.
+- E6 training-script SHA-256: `8aa6e6c26d5547d8e661e4101069eb41ca07d07349b73897f52c5f63f76d180d`. E6 test SHA-256: `8beed5d3699a26e8b4948fd1014e60cc31299e09d117a85c9edd7a6de8ee511c`.
+- E6 checkpoint SHA-256 by fold: `73e12e8d35cc7db9b1dc79e01115fd2176deda635c2b182d3342bbddba7be151`, `9e2eb61e7800a5c2b1635a92a8624699c69d70250f93c207c6b2c403a8492b11`, `719059ce2ce677f0ce7a597e9247471f81f4472a2195a51d72d1f1675bab5efa`, `5a677348402ea75155966e5c7b8b461364bfc685c67af3ec16d4fb9b52599c9c`, `064e7b7f037185df815725111fa69dcc7adfe084824a297f5e196b7c4b0e1f6d`.
+- This comparison is on ten filename-derived video groups under the folder-label assumption, with known CSV/folder label disagreements. It is not a private-test result. The RGB improvement does not by itself authorize deployment; `predict.py` and its checkpoint remain unchanged.

@@ -1,0 +1,11 @@
+{
+  "primary_metric": "pooled_macro_f1",
+  "e5_pooled_macro_f1": 0.7285518436772659,
+  "e6_pooled_macro_f1": 0.7541319680268727,
+  "selected_experiment": "E6",
+  "e5_pooled_accuracy": 0.7960057061340942,
+  "e6_pooled_accuracy": 0.8174037089871612,
+  "changed_oof_predictions": 264,
+  "wrong_to_correct": 119,
+  "correct_to_wrong": 89
+}
