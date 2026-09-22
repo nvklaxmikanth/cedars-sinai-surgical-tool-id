@@ -1,4 +1,4 @@
-# Surgical tool classification assessment
+# Surgical tool classification
 
 This repository classifies PNG surgical frames as **clipper, grasper, hook, or scissor**. The deployable E10 model is an equal-weight ensemble of three ResNet18 models trained with seeds 17, 42, and 123. Its entry point is [`surgical_tool_id/predict.py`](surgical_tool_id/predict.py).
 
