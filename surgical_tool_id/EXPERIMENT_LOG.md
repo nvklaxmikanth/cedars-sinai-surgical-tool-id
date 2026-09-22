@@ -248,3 +248,88 @@ Joining E3 and E4 OOF CSVs by complete relative path found **289 changed predict
 - E4 `train_cv.py` SHA-256: `114932dca90fb14786dd7991db646b03f2a8b9d8477df9012cd715ddc65cdc93`. E4 test SHA-256: `0f422f0ec47cf4c22f340daa5fc0921754aa3a43b38e870a2476c2f162c454d4`.
 - E4 checkpoint SHA-256 by fold: `4b2ae5641307feeb662ea2b1256cd59ceed00f338477d89f12ff8c431ca8f80d`, `dcd7b0e9f2c362792863535ac43a99a2a090c99122def2e9893cc5c7491fd092`, `55b809b7f72b4fd03e61355050be526fe52bb2e22ac6c041c9fe32ac630d0446`, `042a85addc03eef62d68da1ac9ae706520e365caa16183b0e9269bb19ad74afc`, `bea47694454c4a11e0f5f83e9d397de97f90bf7738174d974424a379d7cd6536`.
 - This is a comparison on ten filename-derived video groups with the known folder/CSV label disagreements. It is not a private-test result or a deployment-model selection. Different losses changed training trajectories and early-stopping epochs; the runtime difference is not a per-epoch speed claim. Deployment inference and its checkpoint were unchanged.
+
+# E5 — fold-training-only inverse-frequency class weights
+
+E5 repeats E4 on the same five E2 folds with only a weighted cross-entropy criterion. For each fold, class counts come from that fold's `train_paths` only. The weight for class `c` is `(1 / train_count[c]) / mean_j(1 / train_count[j])`, computed as float32; the mean of the four weights is one. E4 architecture, grayscale preprocessing, seed 42, data order, Adam at 0.001, batch size 2, raw-logit cross entropy with integer targets, 30-epoch ceiling, training-loss patience, and validation macro-F1 checkpoint selection are unchanged. No class weights use held-out labels. No deployment inference or E4 file was edited.
+
+## Commands and checks
+
+Commands ran from `surgical_tool_id/`:
+
+| Command | Measured result |
+| --- | --- |
+| `diff -u experiments/e4_cross_entropy_cv/train_cv.py experiments/e5_weighted_ce_cv/train_cv.py` | Training-path differences were the class-weight function, its training-set-only call, `CrossEntropyLoss(weight=...)`, and recorded class-count/weight metadata. E5 aggregation additionally records the comparison to E4. |
+| `for fold in 0 1 2 3 4; do PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e5_weighted_ce_cv/train_cv.py --fold "$fold" || exit; done` | Five independent CPU training processes completed. Per-fold runtime and process peak RSS appear below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e5_weighted_ce_cv/train_cv.py --aggregate` | Wrote 1,402 unique-path OOF predictions, pooled metrics, and `comparison_to_e4.json`. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 24 tests passed in 27.428 s. E5 tests verify inverse-frequency ratios, mean-one normalization, absent-class errors, per-fold training counts and weights, parity with E4 non-loss settings and tensors, analytic weighted raw-logit CE, complete OOF coverage, metrics, selected epochs, checkpoint hashes, reloaded-checkpoint predictions, and pooled-macro-F1 selection. E4 tests also passed. |
+| E4 fold-0 `train_fold(0)` rerun after loading the unchanged E4 script with a temporary output directory | Checkpoint SHA-256 matched `4b2ae5641307feeb662ea2b1256cd59ceed00f338477d89f12ff8c431ca8f80d`; fold OOF CSV SHA-256 matched `81163ce49fd0c0479fa51b85e052c62a6ab73c152471b3653fa97ae45b460212`. Rerun took 308.199 s and peaked at 543.2 MiB RSS. E4 artifacts were not rewritten. |
+| `git diff --check` | No whitespace errors. |
+
+E5's five retained runs totaled **1,379.055 s** inside `train_fold`, versus E4's **1,563.102 s**. The maximum fold-process peak RSS was **614.625 MiB** for E5, versus **633.688 MiB** for E4. These are single-run observations; differing epoch counts affect total runtime, and process RSS includes the interpreter and libraries.
+
+## Fold training counts and normalized weights
+
+Values follow class order **clipper, grasper, hook, scissor**. Counts are from each fold's training paths; the held-out video groups were excluded before counting.
+
+| Fold | Training counts | Mean-one inverse-frequency weights |
+| --- | --- | --- |
+| 0 | 208, 392, 415, 127 | 1.090033, 0.578385, 0.546330, 1.785251 |
+| 1 | 230, 343, 293, 75 | 0.724348, 0.485715, 0.568601, 2.221335 |
+| 2 | 195, 430, 474, 129 | 1.184656, 0.537228, 0.487358, 1.790758 |
+| 3 | 213, 394, 424, 105 | 0.982430, 0.531110, 0.493532, 1.992929 |
+| 4 | 202, 409, 414, 136 | 1.153701, 0.569798, 0.562917, 1.713585 |
+
+## Metrics and direct E4 comparison
+
+All metrics treat the E2 folder labels as the explicit single-label diagnostic assumption. Within each fold, the best checkpoint is selected by validation macro-F1; **pooled OOF macro-F1 is the primary metric for selecting between the E4 and E5 experiments**. There was no deployment-model selection.
+
+| Fold | n | Selected epoch (zero-based) | Epochs run | E5 accuracy | E5 macro-F1 | E4 macro-F1 | Runtime s | Peak RSS MiB | Changed OOF labels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 260 | 20 | 22 | 0.873077 | 0.781285 | 0.782046 | 255.117 | 438.031 | 21 |
+| 1 | 461 | 18 | 30 | 0.750542 | 0.660824 | 0.646652 | 337.883 | 597.125 | 93 |
+| 2 | 174 | 0 | 21 | 0.821839 | 0.828877 | 0.774133 | 250.502 | 604.016 | 29 |
+| 3 | 266 | 21 | 26 | 0.838346 | 0.790955 | 0.752606 | 293.407 | 614.625 | 38 |
+| 4 | 241 | 14 | 19 | 0.734440 | 0.630953 | 0.651161 | 242.146 | 538.828 | 29 |
+
+Per-class E5 values are **precision / recall / F1**:
+
+| Fold | Clipper | Grasper | Hook | Scissor |
+| --- | --- | --- | --- | --- |
+| 0 | .820/.759/.788 | .938/.910/.924 | .848/.989/.913 | .750/.375/.500 |
+| 1 | .491/.812/.612 | .760/.893/.821 | .892/.778/.831 | .458/.324/.379 |
+| 2 | .839/.701/.764 | .753/.935/.835 | 1.000/.871/.931 | .786/.786/.786 |
+| 3 | .733/.673/.702 | .887/.959/.922 | .901/.901/.901 | .676/.605/.639 |
+| 4 | .824/.700/.757 | .785/.614/.689 | .930/.879/.904 | .103/.571/.174 |
+
+E5 confusion matrices, **rows = actual folder labels; columns = predictions**, in the class order above:
+
+| Fold | Matrix, four rows |
+| --- | --- |
+| 0 | `[[41,5,7,1],[1,91,7,1],[0,1,89,0],[8,0,2,6]]` |
+| 1 | `[[26,2,3,1],[5,133,5,6],[13,15,165,19],[9,25,12,22]]` |
+| 2 | `[[47,19,0,1],[4,58,0,0],[2,0,27,2],[3,0,0,11]]` |
+| 3 | `[[33,5,2,9],[3,94,1,0],[1,5,73,2],[8,2,5,23]]` |
+| 4 | `[[42,7,6,5],[3,51,0,29],[6,4,80,1],[0,3,0,4]]` |
+
+**Pooled E5 OOF:** 1,402 samples, accuracy **0.796006**, macro-F1 **0.728552**. E4 pooled accuracy was **0.803852** and macro-F1 **0.713121**. E5 gained **0.015431 macro-F1** and lost **0.007846 accuracy**. By the declared primary metric, `comparison_to_e4.json` selects **E5**. Fold 0 and fold 4 macro-F1 decreased slightly; the pooled score increased. The pooled macro-F1 is computed from all OOF predictions, not from the average of fold F1 values.
+
+| Pooled class | Support | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| clipper | 262 | 0.741176 | 0.721374 | 0.731141 |
+| grasper | 492 | 0.821154 | 0.867886 | 0.843874 |
+| hook | 505 | 0.896694 | 0.859406 | 0.877654 |
+| scissor | 143 | 0.461538 | 0.461538 | 0.461538 |
+
+Pooled E5 confusion matrix: `[[189,38,18,17],[16,427,13,36],[22,25,434,24],[28,30,19,66]]`.
+
+Joining E4 and E5 OOF CSVs by complete relative path found **210 changed predictions** (folds 0–4: 21, 93, 29, 38, 29). Among changed rows, **81 went from wrong to correct**, **92 from correct to wrong**, and **37 remained wrong** under the folder-label assumption. The other 1,192 predicted labels were unchanged.
+
+## Artifacts and limits
+
+- E5 `oof_predictions.csv` SHA-256: `f8e7727eb52b1683e0b55933c04009357c2c5401bc4e6404f7cdd3e811688b18`. It contains one complete relative path per E2 sample.
+- E5 `results.json` SHA-256: `b4feae272d9f6e3372af1d7dde79435df9f835ed3904bbcbc82438f49f2c0a5b`. It includes exact per-fold weights, metrics, matrices, history, resource results, and checkpoint hashes.
+- E5 `comparison_to_e4.json` SHA-256: `24289792066a77f6db7a91ab682f5c561a06c662ff7afedbb077088dc6240b8d`. Primary metric: pooled macro-F1; selected experiment: E5.
+- E5 training-script SHA-256: `7bc19b21566e9c3453819892150e359fde6b79943080e3e90bc1320c61e21994`. E5 test SHA-256: `a33e1ed5c0e3c6f70baaff2c2d92dcfb3f232fe3882e3586d65e8c761762e9d9`.
+- E5 checkpoint SHA-256 by fold: `17de74b864b7b0c4693e560160d1f2e98e5a9a699bcdf07470026773c6bdb767`, `541647e8483d500890b020365134688c4eef0926807d2f31534193ad01c1b067`, `9663b4b640c8c0ef7a8f393b6b0c763960e91c3ccfbc90b12eb6a85947703354`, `74e019f89817857a5cc076d44ba6ae10774510ceb6e52027740f9581e5cd9267`, `ff2ac474f7c50a1ca756ed3390665bf12bc2437a150fd0299ddfd463432af8df`.
+- This selection is based on video-held-out folder-label diagnostics for ten filename-derived groups with known CSV/folder label disagreements. It is not a private-test result. Selecting E5 by pooled macro-F1 does not authorize or enact deployment; `predict.py` and its checkpoint remain unchanged.
