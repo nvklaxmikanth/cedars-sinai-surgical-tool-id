@@ -406,3 +406,76 @@ Joining E5 and E6 OOF CSVs by complete relative path found **264 changed predict
 - E6 training-script SHA-256: `8aa6e6c26d5547d8e661e4101069eb41ca07d07349b73897f52c5f63f76d180d`. E6 test SHA-256: `8beed5d3699a26e8b4948fd1014e60cc31299e09d117a85c9edd7a6de8ee511c`.
 - E6 checkpoint SHA-256 by fold: `73e12e8d35cc7db9b1dc79e01115fd2176deda635c2b182d3342bbddba7be151`, `9e2eb61e7800a5c2b1635a92a8624699c69d70250f93c207c6b2c403a8492b11`, `719059ce2ce677f0ce7a597e9247471f81f4472a2195a51d72d1f1675bab5efa`, `5a677348402ea75155966e5c7b8b461364bfc685c67af3ec16d4fb9b52599c9c`, `064e7b7f037185df815725111fa69dcc7adfe084824a297f5e196b7c4b0e1f6d`.
 - This comparison is on ten filename-derived video groups under the folder-label assumption, with known CSV/folder label disagreements. It is not a private-test result. The RGB improvement does not by itself authorize deployment; `predict.py` and its checkpoint remain unchanged.
+
+# E7 — frozen pretrained ResNet18
+
+E7 uses the E2 video-grouped folds, seed 42, batch size 2, Adam learning rate 0.001, 30-epoch ceiling, training-loss patience 3 with 0.0001 minimum improvement, fold-training-only mean-one inverse-frequency cross-entropy weights, and highest validation macro-F1 checkpoint selection from E6. The new backbone is ResNet18 with the official [PyTorch `IMAGENET1K_V1` weights](https://docs.pytorch.org/vision/main/_modules/torchvision/models/resnet.html), bundled locally. Its [published preprocessing](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet18) is RGB, resize shorter side to 256 with bilinear interpolation, center crop 224, scale by 1/255, and normalize with ImageNet means and standard deviations. The local implementation accepts the official state dict with `strict=True` and needs no `torchvision` installation or network request. `torch==2.6.0` was installed; `torchvision` was unavailable in this environment.
+
+Every parameter outside the new four-class `fc` head has `requires_grad=False`. The backbone and all BatchNorm modules stay in eval mode. With fixed preprocessing and no augmentation, E7 extracts each image's 512-dimensional frozen feature once without gradients, then trains a fresh independent linear head for each fold. The feature cache contains all E2 paths and fixed features but no labels. Fold training reads labels from the E2 manifest and computes weights from that fold's training paths only. This is mathematically the same head optimization as repeatedly evaluating the frozen backbone, subject to floating-point batch-size effects. No supplied surgical checkpoint or deployment inference was changed.
+
+## Commands and verification
+
+Commands ran from `surgical_tool_id/` with CPU execution and `OMP_NUM_THREADS=1`:
+
+| Command | Measured result |
+| --- | --- |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e7_frozen_resnet18/train_cv.py --cache` | Extracted 1,402 × 512 features in 98.661 s; peak process RSS 601.297 MiB. Backbone state SHA-256 before and after was identical: `c6fc025cae67cee295fa18eff0998f3ae5f0e7a7d662ca38ab7be77ad49665c9`. |
+| `for fold in 0 1 2 3 4; do PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e7_frozen_resnet18/train_cv.py --fold "$fold" || exit; done` | Five fresh, independent head fits completed. Fold runtimes, memory, and selected epochs appear below. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python experiments/e7_frozen_resnet18/train_cv.py --aggregate` | Wrote 1,402 unique-path OOF predictions, pooled metrics, and E6 comparison. |
+| `PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 python -m unittest discover -s tests -v` | 36 tests passed in 35.300 s. E7 checks bundled offline loading, RGB ImageNet normalization, frozen backbone and BatchNorm tensors after a head optimizer step, cached versus fresh features, offline image inference versus OOF, all reloaded head checkpoints and metrics, and pooled-macro-F1 selection. Earlier E0–E6 tests passed. |
+| E7 fold-0 `train_fold(0)` rerun into a temporary directory from the bundled feature cache | Checkpoint SHA-256 matched `9612ef102214093292e3d3024d3f0d27acb5bc317eabc196009185774bc4521f`; fold OOF CSV SHA-256 matched `f2ea7a8b37684fc2cf2a6e85ed58c6295822f66cfa2a071c4fb6be2dcf731f0e`. Rerun fold time 2.608 s and peak RSS 257.0 MiB. Retained E7 files were not rewritten. |
+
+The five retained head fits totaled **12.388 s** inside `train_fold`, in addition to the **98.661 s** shared feature extraction. Their maximum process peak RSS was **259.203 MiB**; extraction peaked at **601.297 MiB**. These are single CPU runs and exclude command startup and aggregation time. E6's full CNN fold fits took 1,925.400 s in total, but that is a different architecture and workload, so the runtimes are not per-epoch speed comparisons.
+
+## Fold metrics and direct E6 comparison
+
+Metrics use the E2 **folder labels as an explicit single-label diagnostic assumption**. There are known folder/CSV label disagreements. Class order is **clipper, grasper, hook, scissor**. Fold checkpoints use validation macro-F1; pooled OOF macro-F1 is the primary E6-versus-E7 experiment metric.
+
+| Fold | n | Selected epoch (zero-based) | Epochs run | E7 accuracy | E7 macro-F1 | E6 macro-F1 | Head runtime s | Peak RSS MiB | Changed OOF labels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 260 | 18 | 30 | 0.876923 | 0.821867 | 0.847507 | 2.773 | 257.797 | 44 |
+| 1 | 461 | 5 | 30 | 0.696312 | 0.598483 | 0.641411 | 2.085 | 259.141 | 188 |
+| 2 | 174 | 8 | 30 | 0.902299 | 0.836187 | 0.789237 | 2.565 | 258.562 | 34 |
+| 3 | 266 | 6 | 30 | 0.864662 | 0.829730 | 0.819542 | 2.418 | 258.703 | 67 |
+| 4 | 241 | 15 | 30 | 0.796680 | 0.660062 | 0.694316 | 2.546 | 259.203 | 65 |
+
+Per-class E7 values are **precision / recall / F1**:
+
+| Fold | Clipper | Grasper | Hook | Scissor |
+| --- | --- | --- | --- | --- |
+| 0 | .898/.815/.854 | .916/.870/.892 | .870/.967/.916 | .625/.625/.625 |
+| 1 | .338/.781/.472 | .928/.517/.664 | .909/.896/.903 | .305/.426/.356 |
+| 2 | .934/.851/.891 | .939/1.000/.969 | .861/1.000/.925 | .636/.500/.560 |
+| 3 | .750/.857/.800 | .966/.878/.920 | .886/.963/.923 | .727/.632/.676 |
+| 4 | .930/.667/.777 | .857/.795/.825 | .955/.923/.939 | .061/.286/.100 |
+
+E7 confusion matrices, **rows = actual folder labels; columns = predictions**:
+
+| Fold | Matrix, four rows |
+| --- | --- |
+| 0 | `[[44,4,2,4],[3,87,8,2],[0,3,87,0],[2,1,3,10]]` |
+| 1 | `[[25,1,3,3],[21,77,6,45],[4,0,190,18],[24,5,10,29]]` |
+| 2 | `[[57,3,3,4],[0,62,0,0],[0,0,31,0],[4,1,2,7]]` |
+| 3 | `[[42,0,0,7],[3,86,7,2],[0,3,78,0],[11,0,3,24]]` |
+| 4 | `[[40,8,2,10],[2,66,1,14],[0,0,84,7],[1,3,1,2]]` |
+
+**Pooled E7 OOF:** 1,402 samples, accuracy **0.804565**, macro-F1 **0.738166**. E6 pooled accuracy was **0.817404** and macro-F1 **0.754132**. E7 fell by **0.012839 accuracy** and **0.015966 macro-F1**. By the declared primary metric, `comparison_to_e6.json` selects **E6**. Pooled macro-F1 comes from all OOF predictions, rather than the mean of fold F1 values.
+
+| Pooled class | Support | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| clipper | 262 | 0.734982 | 0.793893 | 0.763303 |
+| grasper | 492 | 0.921951 | 0.768293 | 0.838137 |
+| hook | 505 | 0.902111 | 0.930693 | 0.916179 |
+| scissor | 143 | 0.382979 | 0.503497 | 0.435045 |
+
+Pooled E7 confusion matrix: `[[208,16,10,28],[29,378,22,63],[4,6,470,25],[42,10,19,72]]`.
+
+Joining E6 and E7 OOF CSVs by complete relative path found **398 changed predictions** (folds 0–4: 44, 188, 34, 67, 65). Under the folder-label assumption, **164 went from wrong to correct**, **182 from correct to wrong**, and **52 remained wrong**. The other 1,004 predicted labels were unchanged.
+
+## Artifacts and limits
+
+- Official bundled weights SHA-256: `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec` (46,830,571 bytes). Source URL and expected hash are in `weights/weights_manifest.json`; the local file is loaded directly for offline training and inference.
+- E2 manifest SHA-256: `d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18`. E7 feature cache SHA-256: `3df7b344b20a6179d6038f24a22f2eff238243cc85b4271f2bef285ba9791e12`.
+- E7 `oof_predictions.csv` SHA-256: `20d744c452884804cb3473e17086007d5fbd78f4de4e8a36abda0772fe4e5d18`. E7 `results.json` SHA-256: `3a35ae43452a1db896a8202a4eddb50ce930f3aa509d1822402792f57655ccff`. E7 `comparison_to_e6.json` SHA-256: `5b8b6c9549be8e536d8ab37e708d2a8101c60b0566c1a144c9f7bc8fa5470dc1`.
+- E7 checkpoint SHA-256 by fold: `9612ef102214093292e3d3024d3f0d27acb5bc317eabc196009185774bc4521f`, `5b8921c873fd349cf9a6950cfa254995d542f9ca2a321b755867ed9a3b798142`, `dce1e87cc011938ed3bf2c5c6d995c8999ee5e9e46c4b1c10260e71e3135a43c`, `165337c8873e2a9463b5e42dc73de801400107c7a31cf7761954f0aa82f6dc3e`, `4d83764220a56ff1caa6bf6f21cac5e258ca02fa64035de755f38238669a0f01`.
+- This is an OOF comparison on ten filename-derived video groups, under the folder-label assumption. It is not a private-test result. The head is trained on features extracted in batches of 16; the offline image inference check compared three fold-0 images individually and reproduced their predictions. No claim of byte-identical feature tensors across every inference batch size is made. The existing `predict.py` and deployment checkpoint remain unchanged.

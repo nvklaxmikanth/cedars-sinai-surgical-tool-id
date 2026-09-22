@@ -1,0 +1,8 @@
+{
+  "model": "ResNet18",
+  "weights": "IMAGENET1K_V1",
+  "official_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+  "file": "resnet18-f37072fd.pth",
+  "sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+  "source": "Existing local copy at /Users/nvklaxmikanth/Code/cedars-sinai/surgical_tool_id/experiments/E8-frozen-pretrained-ResNet18/weights/resnet18-f37072fd.pth; copied byte-for-byte and hash-verified."
+}
