@@ -1,0 +1,20 @@
+{
+  "primary_metric": "pooled_macro_f1",
+  "e8_pooled_macro_f1": 0.8694830268641905,
+  "e8_pooled_accuracy": 0.9101283880171184,
+  "e7": {
+    "pooled_macro_f1": 0.7381662197574761,
+    "pooled_accuracy": 0.8045649072753209,
+    "changed_oof_predictions": 271,
+    "wrong_to_correct": 193,
+    "correct_to_wrong": 45
+  },
+  "e6": {
+    "pooled_macro_f1": 0.7541319680268727,
+    "pooled_accuracy": 0.8174037089871612,
+    "changed_oof_predictions": 281,
+    "wrong_to_correct": 191,
+    "correct_to_wrong": 61
+  },
+  "selected_experiment": "E8"
+}

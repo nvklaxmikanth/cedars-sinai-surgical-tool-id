@@ -1,0 +1,3 @@
+# Regenerated offline by train_cv.py --cache (281 MB).
+feature_cache.pt
+fold_*_console.log
