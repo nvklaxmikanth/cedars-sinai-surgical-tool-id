@@ -1,0 +1,63 @@
+{
+  "seed": 42,
+  "n_samples": 1402,
+  "selected_epochs_zero_based": [
+    8,
+    8,
+    10,
+    10,
+    7,
+    8,
+    11,
+    8,
+    5,
+    2,
+    14,
+    12,
+    14,
+    7,
+    13
+  ],
+  "median_selected_epoch_zero_based": 8,
+  "epochs_ran": 9,
+  "manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+  "feature_cache_sha256": "4a89a32e0b05b7ccb49d9c4e8412ff210aba44eab869db837676a21b9a4d1770",
+  "frozen_state_before_sha256": "6c344528608ded2e880a4f337df3613846570225a1def765d10d60c2500445ec",
+  "frozen_state_after_sha256": "6c344528608ded2e880a4f337df3613846570225a1def765d10d60c2500445ec",
+  "class_names": [
+    "clipper",
+    "grasper",
+    "hook",
+    "scissor"
+  ],
+  "class_counts": {
+    "clipper": 262,
+    "grasper": 492,
+    "hook": 505,
+    "scissor": 143
+  },
+  "class_weights": {
+    "clipper": 1.029998779296875,
+    "grasper": 0.5484952330589294,
+    "hook": 0.5343756079673767,
+    "scissor": 1.887130618095398
+  },
+  "batch_size": 2,
+  "layer4_learning_rate": 0.0001,
+  "head_learning_rate": 0.001,
+  "training_losses": [
+    0.5801155190165141,
+    0.26557392760267895,
+    0.2169638186491133,
+    0.10629610063728412,
+    0.09958546066411458,
+    0.07651885549155983,
+    0.20854427163279363,
+    0.04439083801510244,
+    0.18039004248348556
+  ],
+  "checkpoint_sha256": "97cd6548719638a4a46d53a67d2d6cbff72b16a3bb60b840c0edcd9269eb46d4",
+  "runtime_seconds": 279.13294762498117,
+  "peak_rss_mib": 780.28125
+}

@@ -1,0 +1,23 @@
+{
+  "version": "e10-v1",
+  "class_names": [
+    "clipper",
+    "grasper",
+    "hook",
+    "scissor"
+  ],
+  "seeds": [
+    17,
+    42,
+    123
+  ],
+  "ensemble": "equal_weight_softmax_mean",
+  "epochs_ran": 9,
+  "training_manifest_sha256": "d82c7984e1ebcbaaf85ba8ca1ec7561cb141ae40ad4cb379d13c661c88fcaf18",
+  "pretrained_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+  "checkpoint_sha256": {
+    "17": "9dd2105b617fccba565a678ec54f40cac6006a2317075edd65e8379a036dc3bf",
+    "42": "97cd6548719638a4a46d53a67d2d6cbff72b16a3bb60b840c0edcd9269eb46d4",
+    "123": "fb3e313f0faf99d701f45cb222d53c615f2dd534aededc0d454583f78006cef5"
+  }
+}

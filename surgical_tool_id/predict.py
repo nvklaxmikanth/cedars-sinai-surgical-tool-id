@@ -1,5 +1,4 @@
-"""Inference CLI - runs the current best checkpoint over a directory of
-images and writes out a predictions CSV.
+"""Inference CLI for the E10 three-seed ResNet18 ensemble.
 
 Usage:
   python predict.py --data-dir <DIR> --out <CSV>
@@ -10,39 +9,17 @@ images (no subfolders) also works.
 """
 import argparse
 import csv
-import os
+import hashlib
+import json
 from collections import Counter
 from pathlib import Path
 
 import torch
-import torch.nn as nn
-from PIL import Image
 from torch.utils.data import DataLoader, Dataset
+from final_model import ResNet18, preprocess_image
 
-# Checkpoint output indices follow the alphabetical label order used in training.
 CLASS_NAMES = ["clipper", "grasper", "hook", "scissor"]
-CHECKPOINT_PATH = os.path.join(os.path.dirname(__file__), "checkpoints", "model_best.pt")
-
-
-class SmallCNN(nn.Module):
-    """Architecture of checkpoints/model_best.pt, without training imports."""
-
-    def __init__(self, num_classes):
-        super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1), nn.BatchNorm2d(16), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(64, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(), nn.MaxPool2d(2),
-        )
-        self.dropout = nn.Dropout(0.5)
-        self.classifier = nn.Linear(64 * 8 * 8, num_classes)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = x.flatten(1)
-        x = self.dropout(x)
-        return self.classifier(x)
+PACKAGE = Path(__file__).resolve().parent / "checkpoints" / "e10"
 
 
 def discover_images(data_dir):
@@ -69,9 +46,7 @@ class InferenceDataset(Dataset):
     def __getitem__(self, idx):
         path, identifier = self.items[idx]
         try:
-            img = Image.open(path).convert("L").resize((128, 128))
-            tensor = torch.tensor(list(img.getdata()), dtype=torch.float32).view(1, 128, 128) / 255.0
-            tensor = tensor.repeat(3, 1, 1)
+            tensor = preprocess_image(path)
         except Exception as exc:
             raise ValueError(f"cannot read PNG image {path}: {exc}") from exc
         return tensor, identifier
@@ -85,20 +60,33 @@ def main():
 
     ds = InferenceDataset(args.data_dir)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SmallCNN(num_classes=len(CLASS_NAMES)).to(device)
-    if not os.path.isfile(CHECKPOINT_PATH):
-        ap.error(f"checkpoint not found: {CHECKPOINT_PATH}")
-    state = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True)
-    model.load_state_dict(state)
-    model.eval()
+    manifest_path = PACKAGE / "manifest.json"
+    if not manifest_path.is_file():
+        ap.error(f"ensemble manifest not found: {manifest_path}")
+    manifest = json.loads(manifest_path.read_text())
+    if manifest["class_names"] != CLASS_NAMES or manifest["seeds"] != [17, 42, 123]:
+        ap.error("ensemble manifest class order or seeds do not match")
+    models = []
+    for seed in manifest["seeds"]:
+        checkpoint = PACKAGE / f"seed_{seed}.pt"
+        if not checkpoint.is_file():
+            ap.error(f"ensemble checkpoint not found: {checkpoint}")
+        actual = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+        if actual != manifest["checkpoint_sha256"][str(seed)]:
+            ap.error(f"ensemble checkpoint hash mismatch: {checkpoint}")
+        model = ResNet18(num_classes=len(CLASS_NAMES)).to(device)
+        model.load_state_dict(torch.load(checkpoint, map_location=device, weights_only=True), strict=True)
+        model.eval()
+        models.append(model)
 
-    loader = DataLoader(ds, batch_size=64, shuffle=False)
+    loader = DataLoader(ds, batch_size=16, shuffle=False)
 
     rows = []
-    with torch.no_grad():
+    with torch.inference_mode():
         for imgs, names in loader:
             imgs = imgs.to(device)
-            preds = model(imgs).argmax(dim=1).cpu().tolist()
+            probabilities = sum(torch.softmax(model(imgs), dim=1) for model in models) / len(models)
+            preds = probabilities.argmax(dim=1).cpu().tolist()
             for name, p in zip(names, preds):
                 rows.append((name, CLASS_NAMES[p]))
 
